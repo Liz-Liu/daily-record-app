@@ -65,7 +65,7 @@ function removeTag(index: number) {
 }
 
 /** 按 backspace 且輸入為空時，刪除最後一個 tag */
-function handleBackspace(e: KeyboardEvent) {
+function handleBackspace() {
   if (inputValue.value === '' && tags.value.length > 0) {
     removeTag(tags.value.length - 1)
   }
