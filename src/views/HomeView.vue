@@ -154,7 +154,7 @@ const goToRecord = (date: string) => {
 }
 
 const goToNew = () => {
-  router.push('/new')
+  router.push('/record')
 }
 
 </script>
