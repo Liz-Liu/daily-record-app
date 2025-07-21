@@ -150,7 +150,7 @@ const loadMore = () => {
 const router = useRouter()
 
 const goToRecord = (date: string) => {
-  router.push(`/edit/${date}`)
+  router.push(`/record/${date}`)
 }
 
 const goToNew = () => {
