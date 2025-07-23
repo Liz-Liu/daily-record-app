@@ -2,7 +2,7 @@ export function validateRecord(content: string, tags: string[]): string[] {
   const errors: string[] = []
 
   if (!content.trim()) {
-    errors.push('內容不得為空')
+    errors.push("內容不得為空")
   }
 
   if (content.length > 200) {
@@ -10,7 +10,7 @@ export function validateRecord(content: string, tags: string[]): string[] {
   }
 
   if (tags.length > 10) {
-    errors.push('標籤數量不能超過 10 個')
+    errors.push("標籤數量不能超過 10 個")
   }
 
   return errors
