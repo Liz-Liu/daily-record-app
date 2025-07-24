@@ -17,12 +17,17 @@ interface SettingsStorage {
 
 export class LocalStorageService {
   // 儲存單筆草稿
-  static daveDraft(date: string, content: string, tags: string[]) {
+  static saveDraft(
+    date: string,
+    content: string,
+    tags: string[],
+    timestamp: string
+  ): void {
     const drafts: DraftStorage = this.getDrafts()
     drafts[date] = {
       content,
       tags,
-      timestamp: new Date().toISOString(),
+      timestamp,
     }
     this.safeSetItem(DRAFT_KEY, drafts)
   }
@@ -52,8 +57,8 @@ export class LocalStorageService {
     const drafts: DraftStorage = this.getDrafts()
     const now = new Date()
     for (const [date, draft] of Object.entries(drafts)) {
-      console.log('%c日期：', date, 'color: red; font-size: 30px')
-      console.log('%c內容：', draft.content, 'color: red; font-size: 30px')
+      console.log("%c日期：", date, "color: red; font-size: 30px")
+      console.log("%c內容：", draft.content, "color: red; font-size: 30px")
 
       const savedTime = new Date(draft.timestamp)
       const diffDays =

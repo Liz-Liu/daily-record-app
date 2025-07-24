@@ -2,7 +2,7 @@ import type { RecordItem } from "@/types/record"
 
 const BASE_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL
 
-export class GoogleSheetsService {
+export class GoogleSheetsAPI {
   //取得全部的紀錄清單
   static async getRecords(): Promise<RecordItem[]> {
     const res = await fetch(`${BASE_URL}?action=getRecords`)
@@ -39,4 +39,4 @@ console.log(
   import.meta.env.VITE_GOOGLE_SCRIPT_URL
 )
 
-//GoogleSheetsService.ts：完整程式碼
+//GoogleSheetsAPI.ts：完整程式碼
