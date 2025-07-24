@@ -1,15 +1,10 @@
-import type { RecordFormData } from "@/types/record"
+import type { RecordItem } from "@/types/record"
 
 const DRAFT_KEY = "daily-record-drafts"
 const SETTINGS_KEY = "daily-record-settings"
 
 interface DraftStorage {
-  [date: string]: {
-    content: string
-    tags: string[]
-    createdAt: string
-    updatedAt: string
-  }
+  [date: string]: RecordItem
 }
 
 interface SettingsStorage {
@@ -25,33 +20,25 @@ export class LocalStorageService {
     updatedAt: string
   ): void {
     const drafts: DraftStorage = this.getDrafts()
-
-    const isNew = !drafts[date]
-    const createdAt = isNew ? new Date().toISOString() : drafts[date].createdAt
+    const existing = drafts[date]
+    const createdAt = existing?.createdAt ?? updatedAt
 
     drafts[date] = {
+      date,
       content,
       tags,
       createdAt,
       updatedAt,
+      isDraft: true,
     }
 
     this.safeSetItem(DRAFT_KEY, drafts)
   }
 
   // 取得指定日期草稿
-  static getDraft(date: string): RecordFormData | null {
+  static getDraft(date: string): RecordItem | null {
     const drafts: DraftStorage = this.getDrafts()
-    const draft = drafts[date]
-    if (!draft) return null
-    return {
-      date,
-      content: draft.content,
-      tags: draft.tags,
-      isDraft: true,
-      createdAt: draft.createdAt,
-      updatedAt: draft.updatedAt
-    }
+    return drafts[date] ?? null
   }
 
   // 清除指定日期草稿
@@ -64,14 +51,11 @@ export class LocalStorageService {
   // 清除所有過期（超過 7 天）草稿
   static cleanupExpiredDrafts() {
     const drafts: DraftStorage = this.getDrafts()
-    const now = new Date()
+    const now = Date.now()
+    
     for (const [date, draft] of Object.entries(drafts)) {
-      console.log("%c日期：", date, "color: red; font-size: 30px")
-      console.log("%c內容：", draft.content, "color: red; font-size: 30px")
-
-      const savedTime = new Date(draft.updatedAt)
-      const diffDays =
-        (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60 * 24)
+      const time = new Date(draft.updatedAt ?? draft.createdAt ?? "").getTime()
+      const diffDays = (now - time) / (1000 * 60 * 60 * 24)
       if (diffDays > 7) {
         delete drafts[date]
       }
@@ -90,6 +74,7 @@ export class LocalStorageService {
     const settings: SettingsStorage = this.getSettings()
     return settings.lastUsedTags || []
   }
+
 
   // --- 私有工具方法 ---
   private static getDrafts(): DraftStorage {

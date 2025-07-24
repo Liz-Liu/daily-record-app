@@ -95,7 +95,8 @@ const router = useRouter()
 const isEditMode = computed(() => !!route.params.date)
 const isViewing = ref(isEditMode.value)
 
-const date = (route.params.date as string) ?? new Date().toISOString().slice(0, 10)
+const rawDate = route.params.date
+const date = typeof rawDate === 'string' ? rawDate : new Date().toISOString().slice(0, 10)
 
 const formData = reactive<RecordFormData>({
   date,
@@ -108,6 +109,7 @@ const { clearDraftAfterSave } = useDrafts(formData, date)
 
 onMounted(() => {
   if (isEditMode.value) {
+    formData.date
     formData.content = 'This is 原本內容'
     formData.tags = ['Ozone', 'FEnix']
     formData.isDraft = false

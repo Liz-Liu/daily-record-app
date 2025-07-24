@@ -1,51 +1,28 @@
-// src/composables/useDrafts.ts
 import { onMounted, ref, watch } from "vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
 import type { RecordFormData } from "@/types/record"
 
-const draftContent = ref("")
-const draftTags = ref<string[]>([])
-const draftDate = ref("")
-let saveTimeout: ReturnType<typeof setTimeout> | null = null
-
-const autoSaveDraft = () => {
-  if (!draftDate.value) return
-  LocalStorageService.saveDraft(
-    draftDate.value,
-    draftContent.value,
-    draftTags.value,
-    new Date().toISOString()
-  )
-}
-
-const scheduleAutoSave = () => {
-  if (saveTimeout) clearTimeout(saveTimeout)
-  saveTimeout = setTimeout(autoSaveDraft, 2000)
-}
-
-watch([draftContent, draftTags], scheduleAutoSave)
-
-
 export function useDrafts(formData: RecordFormData, date: string) {
   const hasRestoredDraft = ref(false)
 
-  // 嘗試還原草稿
   onMounted(() => {
     const draft = LocalStorageService.getDraft(date)
     if (draft) {
       const shouldRestore = window.confirm("發現尚未儲存的草稿，是否要還原？")
       if (shouldRestore) {
+        formData.date = draft.date
         formData.content = draft.content
         formData.tags = draft.tags
+        formData.createdAt = draft.createdAt
+        formData.updatedAt = draft.updatedAt
+        formData.isDraft = true
         hasRestoredDraft.value = true
       }
     }
 
-    // 清除超過 7 天的草稿
     LocalStorageService.cleanupExpiredDrafts()
   })
 
-  // 2 秒內無輸入則儲存草稿
   let timeout: number
   watch(
     () => [formData.content, formData.tags],
@@ -53,11 +30,12 @@ export function useDrafts(formData: RecordFormData, date: string) {
       clearTimeout(timeout)
       timeout = setTimeout(() => {
         if (formData.content || formData.tags.length > 0) {
+          const now = new Date().toISOString()
           LocalStorageService.saveDraft(
-            date,
+            formData.date,
             formData.content,
             formData.tags,
-            new Date().toISOString()
+            now
           )
         }
       }, 2000)
@@ -65,7 +43,6 @@ export function useDrafts(formData: RecordFormData, date: string) {
     { deep: true }
   )
 
-  // 儲存成功後清除草稿
   function clearDraftAfterSave() {
     LocalStorageService.clearDraft(date)
   }
