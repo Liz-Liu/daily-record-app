@@ -7,7 +7,8 @@ interface DraftStorage {
   [date: string]: {
     content: string
     tags: string[]
-    timestamp: string
+    createdAt: string
+    updatedAt: string
   }
 }
 
@@ -21,14 +22,20 @@ export class LocalStorageService {
     date: string,
     content: string,
     tags: string[],
-    timestamp: string
+    updatedAt: string
   ): void {
     const drafts: DraftStorage = this.getDrafts()
+
+    const isNew = !drafts[date]
+    const createdAt = isNew ? new Date().toISOString() : drafts[date].createdAt
+
     drafts[date] = {
       content,
       tags,
-      timestamp,
+      createdAt,
+      updatedAt,
     }
+
     this.safeSetItem(DRAFT_KEY, drafts)
   }
 
@@ -42,6 +49,8 @@ export class LocalStorageService {
       content: draft.content,
       tags: draft.tags,
       isDraft: true,
+      createdAt: draft.createdAt,
+      updatedAt: draft.updatedAt
     }
   }
 
@@ -60,7 +69,7 @@ export class LocalStorageService {
       console.log("%c日期：", date, "color: red; font-size: 30px")
       console.log("%c內容：", draft.content, "color: red; font-size: 30px")
 
-      const savedTime = new Date(draft.timestamp)
+      const savedTime = new Date(draft.updatedAt)
       const diffDays =
         (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60 * 24)
       if (diffDays > 7) {

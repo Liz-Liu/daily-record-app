@@ -1,123 +1,162 @@
 <template>
-  <div class="p-4 space-y-4">
-    <!-- 返回按鈕 -->
-    <button class="text-sm text-blue-500" @click="goBack">← 返回</button>
+  <!-- 整體進場動畫 -->
+  <div
+    class="p-4 max-w-xl mx-auto space-y-4 opacity-0 translate-y-4 transition-all duration-500 ease-out"
+    :class="{ 'opacity-100 translate-y-0': true }"
+  >
+    <h1 class="text-xl font-bold">
+      {{ isEditMode ? (isViewing ? '檢視紀錄' : '編輯紀錄') : '新增紀錄' }}
+    </h1>
 
-    <!-- 顯示日期 -->
-    <DatePicker v-model="formData.date" :disabled="isViewing" />
+    <DatePicker v-model="formData.date" :disabled="isEditMode" />
 
-    <!-- 內容輸入框 -->
-    <textarea
-      v-model="formData.content"
-      :readonly="isViewing"
-      maxlength="200"
-      rows="5"
-      class="w-full border rounded p-2 text-sm"
-      placeholder="輸入今天的紀錄（最多 200 字）"
-    ></textarea>
+    <!-- 切換動畫區塊 -->
+    <Transition name="fade-slide" mode="out-in">
+      <div :key="isViewing ? 'view' : 'edit'">
+        <!-- 檢視模式 -->
+        <div v-if="isViewing">
+          <p class="whitespace-pre-line">{{ formData.content }}</p>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <span
+              v-for="tag in formData.tags"
+              :key="tag"
+              class="px-2 py-1 bg-gray-200 rounded"
+            >
+              #{{ tag }}
+            </span>
+          </div>
+          <div class="flex gap-2 mt-4">
+            <button @click="goBack" class="flex-1 border rounded py-2">返回</button>
+            <button @click="enterEditMode" class="flex-1 bg-blue-600 text-white rounded py-2">
+              編輯
+            </button>
+          </div>
+        </div>
 
-    <!-- 標籤編輯器 -->
-    <TagEditor v-model="formData.tags" :disabled="isViewing" />
+        <!-- 編輯模式 -->
+        <div v-else>
+          <textarea
+            v-model="formData.content"
+            placeholder="輸入內容（最多 200 字）"
+            maxlength="200"
+            rows="6"
+            class="w-full border p-2 rounded resize-none"
+          />
+          <TagEditor v-model="formData.tags" />
 
-    <!-- 編輯模式下按鈕 -->
-    <div v-if="isEditMode && !isViewing" class="flex gap-2">
-      <button
-        class="bg-blue-500 text-white px-4 py-2 rounded"
-        @click="handleSave"
-      >
-        儲存
-      </button>
-      <button
-        class="bg-gray-300 text-gray-700 px-4 py-2 rounded"
-        @click="cancelEdit"
-      >
-        取消
-      </button>
-    </div>
+          <div class="flex gap-2 mt-4">
+            <button @click="cancelEdit" class="flex-1 border rounded py-2">取消</button>
+            <button @click="handleSave" class="flex-1 bg-blue-600 text-white rounded py-2">
+              儲存
+            </button>
+          </div>
 
-    <!-- 檢視模式下顯示編輯按鈕 -->
-    <div v-else-if="isEditMode && isViewing">
-      <button
-        class="bg-blue-500 text-white px-4 py-2 rounded"
-        @click="isViewing = false">
-        編輯
-      </button>
-      <button
-        class="bg-red-500 text-white px-4 py-2 rounded"
-        @click="handleDelete">
-        刪除
-      </button>
-    </div>
-
-    <!-- 新增模式直接顯示儲存 -->
-    <div v-else class="flex">
-      <button
-        class="bg-blue-500 text-white px-4 py-2 rounded"
-        @click="handleSave"
-      >
-        儲存
-      </button>
-    </div>
+          <button
+            v-if="isEditMode"
+            @click="handleDelete"
+            class="mt-2 w-full text-red-600 text-sm underline"
+          >
+            刪除紀錄
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
+<style scoped>
+/* 切換動畫：滑動 + 淡入 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>
+
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import DatePicker from "@/components/DatePicker.vue";
-import TagEditor from "@/components/TagEditor.vue";
-import type { RecordItem } from "@/types/record";
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import type { RecordFormData } from '@/types/record'
+import { useDrafts } from '@/composables/useDrafts'
+import { GoogleSheetsAPI } from '@/services/GoogleSheetsAPI'
+import DatePicker from '@/components/DatePicker.vue'
+import TagEditor from '@/components/TagEditor.vue'
 
-const router = useRouter();
-const route = useRoute();
+const route = useRoute()
+const router = useRouter()
 
-// 預設今天日期（YYYY-MM-DD）
-const today = new Date().toISOString().slice(0, 10);
+const isEditMode = computed(() => !!route.params.date)
+const isViewing = ref(isEditMode.value)
 
-const formData = ref<RecordItem>({
-  date: today,
-  content: "",
+const date = (route.params.date as string) ?? new Date().toISOString().slice(0, 10)
+
+const formData = reactive<RecordFormData>({
+  date,
+  content: '',
   tags: [],
-});
+  isDraft: true
+})
 
-// 是否為編輯模式
-const isEditMode = computed(() => !!route.params.date);
-// 預設：編輯模式就先顯示為檢視畫面
-const isViewing = ref(isEditMode.value);
+const { clearDraftAfterSave } = useDrafts(formData, date)
 
-// 假資料模擬
 onMounted(() => {
   if (isEditMode.value) {
-    formData.value = {
-      date: route.params.date as string,
-      content: "This is 原本內容",
-      tags: ["Ozone", "FEnix"],
-      createdAt: "2025-07-16T10:30:00Z",
-      updatedAt: "2025-07-16T15:45:00Z",
-    };
+    formData.content = 'This is 原本內容'
+    formData.tags = ['Ozone', 'FEnix']
+    formData.isDraft = false
   }
-});
+})
 
-function handleSave() {
-  console.log("儲存紀錄", formData.value);
-  alert("已儲存！！！");
-  isViewing.value = true;
-  router.push("/");
-}
-
-function handleDelete(){
-  const confirmDelete = window.confirm('確定刪除這筆紀錄？')
-  if (confirmDelete){
-    console.log('🗑 已刪除資料：', formData.value);
-    router.push('/') // 返回首頁
-  }
+function enterEditMode() {
+  isViewing.value = false
 }
 
 function cancelEdit() {
-  isViewing.value = true;
+  isViewing.value = true
 }
 
 function goBack() {
-  router.push("/");
+  router.push('/')
+}
+
+function handleDelete() {
+  const confirmDelete = window.confirm('確定刪除這筆紀錄？')
+  if (confirmDelete) {
+    console.log('🗑 已刪除資料：', formData)
+    router.push('/')
+  }
+}
+
+async function handleSave() {
+  if (!formData.content.trim()) {
+    alert('請輸入內容')
+    return
+  }
+
+  try {
+    // ✅ 只挑出要傳給 Google API 的欄位
+    const recordToSave = {
+      date: formData.date,
+      content: formData.content,
+      tags: formData.tags
+    }
+
+    await GoogleSheetsAPI.saveRecord(recordToSave)
+
+    // ✅ 儲存成功後清除本地草稿（包含 isDraft, createdAt 等）
+    clearDraftAfterSave()
+
+    router.push('/')
+  } catch (err) {
+    console.error('❌ 儲存失敗', err)
+    alert('儲存失敗，請稍後再試')
+  }
 }
 </script>

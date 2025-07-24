@@ -38,5 +38,3 @@ console.log(
   "color: pink; font-size: 40px",
   import.meta.env.VITE_GOOGLE_SCRIPT_URL
 )
-
-//GoogleSheetsAPI.ts：完整程式碼
