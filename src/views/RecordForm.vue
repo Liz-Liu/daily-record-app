@@ -5,7 +5,7 @@
     :class="{ 'opacity-100 translate-y-0': true }"
   >
     <h1 class="text-xl font-bold">
-      {{ isEditMode ? (isViewing ? '檢視紀錄' : '編輯紀錄') : '新增紀錄' }}
+      {{ isEditMode ? (isViewing ? "檢視紀錄" : "編輯紀錄") : "新增紀錄" }}
     </h1>
 
     <DatePicker v-model="formData.date" :disabled="isEditMode" />
@@ -26,8 +26,13 @@
             </span>
           </div>
           <div class="flex gap-2 mt-4">
-            <button @click="goBack" class="flex-1 border rounded py-2">返回</button>
-            <button @click="enterEditMode" class="flex-1 bg-blue-600 text-white rounded py-2">
+            <button @click="goBack" class="flex-1 border rounded py-2">
+              返回
+            </button>
+            <button
+              @click="enterEditMode"
+              class="flex-1 bg-blue-600 text-white rounded py-2"
+            >
               編輯
             </button>
           </div>
@@ -45,8 +50,13 @@
           <TagEditor v-model="formData.tags" />
 
           <div class="flex gap-2 mt-4">
-            <button @click="cancelEdit" class="flex-1 border rounded py-2">取消</button>
-            <button @click="handleSave" class="flex-1 bg-blue-600 text-white rounded py-2">
+            <button @click="cancelEdit" class="flex-1 border rounded py-2">
+              取消
+            </button>
+            <button
+              @click="handleSave"
+              class="flex-1 bg-blue-600 text-white rounded py-2"
+            >
               儲存
             </button>
           </div>
@@ -81,39 +91,84 @@
 </style>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import type { RecordFormData } from '@/types/record'
-import { useDrafts } from '@/composables/useDrafts'
-import { GoogleSheetsAPI } from '@/services/GoogleSheetsAPI'
-import DatePicker from '@/components/DatePicker.vue'
-import TagEditor from '@/components/TagEditor.vue'
+import { ref, reactive, computed, onMounted } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import type { RecordFormData } from "@/types/record"
+import { useDrafts } from "@/composables/useDrafts"
+import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI"
+import DatePicker from "@/components/DatePicker.vue"
+import TagEditor from "@/components/TagEditor.vue"
+import { LocalStorageService } from "@/services/LocalStorageService"
 
 const route = useRoute()
 const router = useRouter()
 
 const isEditMode = computed(() => !!route.params.date)
-const isViewing = ref(isEditMode.value)
+const isViewing = ref(route.params.date ? true : false)
 
 const rawDate = route.params.date
-const date = typeof rawDate === 'string' ? rawDate : new Date().toISOString().slice(0, 10)
+const date =
+  typeof rawDate === "string" ? rawDate : new Date().toISOString().slice(0, 10)
 
 const formData = reactive<RecordFormData>({
   date,
-  content: '',
+  content: "",
   tags: [],
-  isDraft: true
+  isDraft: true,
 })
+
 
 const { clearDraftAfterSave } = useDrafts(formData, date)
 
-onMounted(() => {
-  if (isEditMode.value) {
-    formData.date
-    formData.content = 'This is 原本內容'
-    formData.tags = ['Ozone', 'FEnix']
-    formData.isDraft = false
+onMounted(async () => {
+  
+  if (!formData.date) {
+    const today = new Date().toISOString().slice(0, 10)
+    formData.date = today
+    console.log('%c今天日期', 'color: pink; font-size: 30px;', today)
   }
+  
+  const localDraft = LocalStorageService.getDraft(formData.date)
+  console.log("📦 載入本地草稿", localDraft)
+ 
+  if (localDraft) {
+    formData.date = localDraft.date
+    formData.content = localDraft.content
+    formData.tags = localDraft.tags
+    formData.isDraft = true
+    return
+  }
+
+  if (isEditMode.value) {
+    console.log("📡 從 GoogleSheets 載入資料")
+    try {
+      const record = await GoogleSheetsAPI.getRecordByDate(date)
+      if (record) {
+        formData.date = record.date
+        formData.content = record.content
+        formData.tags = record.tags
+        formData.isDraft = false
+      } else {
+        alert("找不到該筆資料")
+        router.push("/")
+      }
+    } catch (err) {
+      console.error("❌ 載入失敗", err)
+      alert("載入失敗，請稍後再試")
+    }
+  } else {
+    formData.date = date
+    formData.content = ""
+    formData.tags = LocalStorageService.getLastUsedTags()
+    formData.isDraft = true
+  }
+})
+
+console.log("%c新增頁初始化:", "color: pink; font-size: 30px;", {
+  date: formData.date,
+  content: formData.content,
+  tags: formData.tags,
+  isViewing: isViewing.value,
 })
 
 function enterEditMode() {
@@ -125,20 +180,20 @@ function cancelEdit() {
 }
 
 function goBack() {
-  router.push('/')
+  router.push("/")
 }
 
 function handleDelete() {
-  const confirmDelete = window.confirm('確定刪除這筆紀錄？')
+  const confirmDelete = window.confirm("確定刪除這筆紀錄？")
   if (confirmDelete) {
-    console.log('🗑 已刪除資料：', formData)
-    router.push('/')
+    console.log("🗑 已刪除資料：", formData)
+    router.push("/")
   }
 }
 
 async function handleSave() {
   if (!formData.content.trim()) {
-    alert('請輸入內容')
+    alert("請輸入內容")
     return
   }
 
@@ -147,7 +202,7 @@ async function handleSave() {
     const recordToSave = {
       date: formData.date,
       content: formData.content,
-      tags: formData.tags
+      tags: formData.tags,
     }
 
     await GoogleSheetsAPI.saveRecord(recordToSave)
@@ -155,10 +210,10 @@ async function handleSave() {
     // ✅ 儲存成功後清除本地草稿（包含 isDraft, createdAt 等）
     clearDraftAfterSave()
 
-    router.push('/')
+    router.push("/")
   } catch (err) {
-    console.error('❌ 儲存失敗', err)
-    alert('儲存失敗，請稍後再試')
+    console.error("❌ 儲存失敗", err)
+    alert("儲存失敗，請稍後再試")
   }
 }
 </script>
