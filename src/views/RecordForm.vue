@@ -1,76 +1,160 @@
 <template>
-  <!-- 整體進場動畫 -->
-  <div
-    class="p-4 max-w-xl mx-auto space-y-4 opacity-0 translate-y-4 transition-all duration-500 ease-out"
-    :class="{ 'opacity-100 translate-y-0': true }"
-  >
-    <h1 class="text-xl font-bold">
-      {{ isEditMode ? (isViewing ? "檢視紀錄" : "編輯紀錄") : "新增紀錄" }}
-    </h1>
-
-    <DatePicker v-model="formData.date" :disabled="isEditMode" />
-
-    <!-- 切換動畫區塊 -->
-    <Transition name="fade-slide" mode="out-in">
-      <div :key="isViewing ? 'view' : 'edit'">
-        <!-- 檢視模式 -->
-        <div v-if="isViewing">
-          <p class="whitespace-pre-line">{{ formData.content }}</p>
-          <div class="flex flex-wrap gap-2 mt-2">
-            <span
-              v-for="tag in formData.tags"
-              :key="tag"
-              class="px-2 py-1 bg-gray-200 rounded"
-            >
-              #{{ tag }}
-            </span>
-          </div>
-          <div class="flex gap-2 mt-4">
-            <button @click="goBack" class="flex-1 border rounded py-2">
-              返回
-            </button>
-            <button
-              @click="enterEditMode"
-              class="flex-1 bg-blue-600 text-white rounded py-2"
-            >
-              編輯
-            </button>
-          </div>
+  <div class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-6 max-w-2xl">
+      <!-- Header -->
+      <header class="mb-6 flex items-center">
+        <button
+          @click="goBack"
+          class="mr-4 p-2 text-gray-600 hover:text-gray-800 transition-colors rounded-full hover:bg-gray-100"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">
+            {{ isEditMode ? (isViewing ? "檢視紀錄" : "編輯紀錄") : "新增紀錄" }}
+          </h1>
+          <p class="text-gray-600 text-sm">
+            {{ isEditMode ? (isViewing ? 'View Record' : 'Edit Record') : 'Add New Record' }}
+          </p>
         </div>
+      </header>
 
-        <!-- 編輯模式 -->
-        <div v-else>
-          <textarea
-            v-model="formData.content"
-            placeholder="輸入內容（最多 200 字）"
-            maxlength="200"
-            rows="6"
-            class="w-full border p-2 rounded resize-none"
-          />
-          <TagEditor v-model="formData.tags" />
-
-          <div class="flex gap-2 mt-4">
-            <button @click="cancelEdit" class="flex-1 border rounded py-2">
-              取消
-            </button>
-            <button
-              @click="handleSave"
-              class="flex-1 bg-blue-600 text-white rounded py-2"
-            >
-              儲存
-            </button>
-          </div>
-
-          <button
-            v-if="isEditMode"
-            @click="handleDelete"
-            class="mt-2 w-full text-red-600 text-sm underline"
-          >
-            刪除紀錄
-          </button>
+      <!-- Loading State -->
+      <div v-if="isLoading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="animate-pulse space-y-4">
+          <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div class="h-10 bg-gray-200 rounded"></div>
+          <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div class="h-32 bg-gray-200 rounded"></div>
+          <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div class="h-10 bg-gray-200 rounded"></div>
         </div>
       </div>
-    </Transition>
+
+      <!-- 整體進場動畫容器 -->
+      <div
+        v-else
+        class="opacity-0 translate-y-4 transition-all duration-500 ease-out"
+        :class="{ 'opacity-100 translate-y-0': !isLoading }"
+      >
+        <!-- DatePicker (總是顯示) -->
+        <div class="mb-4">
+          <DatePicker v-model="formData.date" :disabled="isEditMode" />
+        </div>
+
+        <!-- 切換動畫區塊 -->
+        <Transition name="fade-slide" mode="out-in">
+          <div :key="isViewing ? 'view' : 'edit'">
+            
+            <!-- View Mode (檢視模式) -->
+            <div v-if="isViewing" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+              <!-- Content Display -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">內容</label>
+                <div class="text-base text-gray-900 leading-relaxed whitespace-pre-wrap min-h-[120px]">
+                  {{ formData.content || '無內容' }}
+                </div>
+              </div>
+
+              <!-- Tags Display -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-3">標籤</label>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="tag in formData.tags"
+                    :key="tag"
+                    class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                  >
+                    #{{ tag }}
+                  </span>
+                  <span v-if="formData.tags.length === 0" class="text-base text-gray-400">無標籤</span>
+                </div>
+              </div>
+
+              <!-- View Mode Action Buttons -->
+              <div class="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  @click="goBack"
+                  class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  返回
+                </button>
+                <button
+                  type="button"
+                  @click="enterEditMode"
+                  class="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  編輯
+                </button>
+              </div>
+            </div>
+
+            <!-- Edit Form (編輯模式) -->
+            <form v-else @submit.prevent="handleSave" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+              <!-- Content Input -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  內容
+                </label>
+                <textarea
+                  v-model="formData.content"
+                  rows="6"
+                  maxlength="200"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  placeholder="記錄今天發生的事情..."
+                ></textarea>
+                <div class="flex justify-between items-center mt-1">
+                  <p class="text-xs text-gray-500">記錄你的想法和感受</p>
+                  <span class="text-xs text-gray-400">{{ formData.content.length }}/200</span>
+                </div>
+              </div>
+
+              <!-- Tag Editor -->
+              <TagEditor v-model="formData.tags" />
+
+              <!-- Edit Form Action Buttons -->
+              <div class="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  @click="cancelEdit"
+                  class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  {{ isEditMode ? '取消' : '返回' }}
+                </button>
+                <button
+                  type="submit"
+                  :disabled="isSaving || !formData.content.trim()"
+                  class="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <span v-if="isSaving" class="flex items-center justify-center">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    儲存中...
+                  </span>
+                  <span v-else>{{ isEditMode ? '更新' : '儲存' }}</span>
+                </button>
+              </div>
+
+              <!-- Delete Button (僅編輯模式顯示) -->
+              <button
+                v-if="isEditMode"
+                type="button"
+                @click="handleDelete"
+                class="w-full mt-2 text-red-600 text-sm underline hover:text-red-800 transition-colors"
+              >
+                刪除紀錄
+              </button>
+            </form>
+
+          </div>
+        </Transition>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -105,10 +189,11 @@ const router = useRouter()
 
 const isEditMode = computed(() => !!route.params.date)
 const isViewing = ref(route.params.date ? true : false)
+const isLoading = ref(false)
+const isSaving = ref(false)
 
 const rawDate = route.params.date
-const date =
-  typeof rawDate === "string" ? rawDate : new Date().toISOString().slice(0, 10)
+const date = typeof rawDate === "string" ? rawDate : new Date().toISOString().slice(0, 10)
 
 const formData = reactive<RecordFormData>({
   date,
@@ -117,50 +202,55 @@ const formData = reactive<RecordFormData>({
   isDraft: true,
 })
 
-
 const { clearDraftAfterSave } = useDrafts(formData, date)
 
 onMounted(async () => {
+  isLoading.value = true
   
-  if (!formData.date) {
-    const today = new Date().toISOString().slice(0, 10)
-    formData.date = today
-    console.log('%c今天日期', 'color: pink; font-size: 30px;', today)
-  }
-  
-  const localDraft = LocalStorageService.getDraft(formData.date)
-  console.log("📦 載入本地草稿", localDraft)
- 
-  if (localDraft) {
-    formData.date = localDraft.date
-    formData.content = localDraft.content
-    formData.tags = localDraft.tags
-    formData.isDraft = true
-    return
-  }
-
-  if (isEditMode.value) {
-    console.log("📡 從 GoogleSheets 載入資料")
-    try {
-      const record = await GoogleSheetsAPI.getRecordByDate(date)
-      if (record) {
-        formData.date = record.date
-        formData.content = record.content
-        formData.tags = record.tags
-        formData.isDraft = false
-      } else {
-        alert("找不到該筆資料")
-        router.push("/")
-      }
-    } catch (err) {
-      console.error("❌ 載入失敗", err)
-      alert("載入失敗，請稍後再試")
+  try {
+    if (!formData.date) {
+      const today = new Date().toISOString().slice(0, 10)
+      formData.date = today
+      console.log('%c今天日期', 'color: pink; font-size: 30px;', today)
     }
-  } else {
-    formData.date = date
-    formData.content = ""
-    formData.tags = LocalStorageService.getLastUsedTags()
-    formData.isDraft = true
+    
+    const localDraft = LocalStorageService.getDraft(formData.date)
+    console.log("📦 載入本地草稿", localDraft)
+   
+    if (localDraft) {
+      formData.date = localDraft.date
+      formData.content = localDraft.content
+      formData.tags = localDraft.tags
+      formData.isDraft = true
+      return
+    }
+
+    if (isEditMode.value) {
+      console.log("📡 從 GoogleSheets 載入資料")
+      try {
+        const record = await GoogleSheetsAPI.getRecordByDate(date)
+        if (record) {
+          formData.date = record.date
+          formData.content = record.content
+          formData.tags = record.tags
+          formData.isDraft = false
+        } else {
+          alert("找不到該筆資料")
+          router.push("/")
+        }
+      } catch (err) {
+        console.error("❌ 載入失敗", err)
+        alert("載入失敗，請稍後再試")
+      }
+    } else {
+      formData.date = date
+      formData.content = ""
+      formData.tags = LocalStorageService.getLastUsedTags()
+      formData.isDraft = true
+      isViewing.value = false // 新增模式直接進入編輯
+    }
+  } finally {
+    isLoading.value = false
   }
 })
 
@@ -176,7 +266,11 @@ function enterEditMode() {
 }
 
 function cancelEdit() {
-  isViewing.value = true
+  if (isEditMode.value) {
+    isViewing.value = true
+  } else {
+    goBack()
+  }
 }
 
 function goBack() {
@@ -197,6 +291,8 @@ async function handleSave() {
     return
   }
 
+  isSaving.value = true
+
   try {
     // ✅ 只挑出要傳給 Google API 的欄位
     const recordToSave = {
@@ -214,6 +310,8 @@ async function handleSave() {
   } catch (err) {
     console.error("❌ 儲存失敗", err)
     alert("儲存失敗，請稍後再試")
+  } finally {
+    isSaving.value = false
   }
 }
 </script>
