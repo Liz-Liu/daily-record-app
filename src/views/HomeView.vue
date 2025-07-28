@@ -71,95 +71,9 @@ import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI";
 import type { RecordItem } from "@/types/record";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
+import mockRecordsRaw from "@/mock/mockRecords.json"
 
-const mockRecords: RecordItem[] = [
-  {
-    date: "2025-07-17",
-    content:
-      "今天完成了 Task 6，寫了一個漂亮的卡片元件，看起來很有成就感！希望 UI/UX 很棒。",
-    tags: ["done", "coding", "vue", "longtagthatshouldnotshow"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第二筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第3筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第4筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第5筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第6筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第7筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第8筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第9筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第10筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第11筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第12筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第13筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第14筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第15筆資料。",
-    tags: ["life", "routine"],
-  },
-  {
-    date: "2025-07-16",
-    content: "做了很多事，這是第16筆資料。",
-    tags: ["life", "routine"],
-  },
-];
+const mockRecords = mockRecordsRaw as RecordItem[]
 
 const records = ref<RecordItem[]>([])
 const loading = ref(true)
