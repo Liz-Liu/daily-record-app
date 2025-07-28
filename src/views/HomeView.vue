@@ -67,11 +67,12 @@
 
 <script setup lang="ts">
 import RecordCard from "@/components/RecordCard.vue";
+import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI";
 import type { RecordItem } from "@/types/record";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
-const mockRecords = ref<RecordItem[]>([
+const mockRecords: RecordItem[] = [
   {
     date: "2025-07-17",
     content:
@@ -158,18 +159,16 @@ const mockRecords = ref<RecordItem[]>([
     content: "做了很多事，這是第16筆資料。",
     tags: ["life", "routine"],
   },
-]);
+];
 
-const visibleCount = ref(10);
-const loading = ref(false);
+const records = ref<RecordItem[]>([])
+const loading = ref(true)
+const error = ref(false)
 
-const visibleRecords = computed(() =>
-  mockRecords.value.slice(0, visibleCount.value)
-);
+const visibleCount = ref(10)
+const visibleRecords = computed(() => records.value.slice(0, visibleCount.value))
+const hasMore = computed(() => visibleCount.value < records.value.length)
 
-const hasMore = computed(() =>
-  visibleCount.value < mockRecords.value.length
-);
 
 const loadMore = () => {
   visibleCount.value += 5;
@@ -184,4 +183,21 @@ const goToRecord = (date: string) => {
 const goToNew = () => {
   router.push("/record");
 };
+
+onMounted(async () => {
+  try {
+    const apiData = await GoogleSheetsAPI.getRecords()
+    records.value = apiData
+  } catch (err) {
+    console.warn("API 失敗，使用 mock 資料", err)
+    try {
+      records.value = mockRecords
+    } catch (mockErr) {
+      console.error("連 mock 資料也失敗", mockErr)
+      error.value = true
+    }
+  } finally {
+    loading.value = false
+  }
+})
 </script>
