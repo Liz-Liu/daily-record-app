@@ -183,6 +183,7 @@ import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI"
 import DatePicker from "@/components/DatePicker.vue"
 import TagEditor from "@/components/TagEditor.vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
+import { getCurrentDate } from "@/utils/dateUtils"
 
 const route = useRoute()
 const router = useRouter()
@@ -193,7 +194,7 @@ const isLoading = ref(false)
 const isSaving = ref(false)
 
 const rawDate = route.params.date
-const date = typeof rawDate === "string" ? rawDate : new Date().toISOString().slice(0, 10)
+const date = typeof rawDate === "string" ? rawDate.slice(0, 10) : getCurrentDate()
 
 const formData = reactive<RecordFormData>({
   date,
@@ -209,13 +210,11 @@ onMounted(async () => {
   
   try {
     if (!formData.date) {
-      const today = new Date().toISOString().slice(0, 10)
+      const today = getCurrentDate()
       formData.date = today
-      console.log('%c今天日期', 'color: pink; font-size: 30px;', today)
     }
     
     const localDraft = LocalStorageService.getDraft(formData.date)
-    console.log("📦 載入本地草稿", localDraft)
    
     if (localDraft) {
       formData.date = localDraft.date
@@ -226,7 +225,6 @@ onMounted(async () => {
     }
 
     if (isEditMode.value) {
-      console.log("📡 從 GoogleSheets 載入資料")
       try {
         const record = await GoogleSheetsAPI.getRecordByDate(date)
         if (record) {
@@ -254,12 +252,7 @@ onMounted(async () => {
   }
 })
 
-console.log("%c新增頁初始化:", "color: pink; font-size: 30px;", {
-  date: formData.date,
-  content: formData.content,
-  tags: formData.tags,
-  isViewing: isViewing.value,
-})
+
 
 function enterEditMode() {
   isViewing.value = false
@@ -280,7 +273,6 @@ function goBack() {
 function handleDelete() {
   const confirmDelete = window.confirm("確定刪除這筆紀錄？")
   if (confirmDelete) {
-    console.log("🗑 已刪除資料：", formData)
     router.push("/")
   }
 }

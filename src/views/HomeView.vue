@@ -9,7 +9,11 @@
 
       <!-- Loading State -->
       <div v-if="loading" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="bg-white rounded-lg p-4 animate-pulse">
+        <div
+          v-for="i in 3"
+          :key="i"
+          class="bg-white rounded-lg p-4 animate-pulse"
+        >
           <div class="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
           <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
           <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
@@ -42,8 +46,18 @@
         <!-- Empty State -->
         <div v-if="visibleRecords.length === 0" class="text-center py-12">
           <div class="text-gray-400 mb-4">
-            <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            <svg
+              class="w-16 h-16 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              ></path>
             </svg>
           </div>
           <p class="text-gray-500 mb-2">還沒有任何記錄</p>
@@ -57,8 +71,18 @@
         class="fixed bottom-6 right-6 bg-blue-500 hover:bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
         aria-label="新增記錄"
       >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 4v16m8-8H4"
+          ></path>
         </svg>
       </button>
     </div>
@@ -66,11 +90,11 @@
 </template>
 
 <script setup lang="ts">
-import RecordCard from "@/components/RecordCard.vue";
-import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI";
-import type { RecordItem } from "@/types/record";
-import { computed, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import RecordCard from "@/components/RecordCard.vue"
+import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI"
+import type { RecordItem } from "@/types/record"
+import { computed, onMounted, ref } from "vue"
+import { useRouter } from "vue-router"
 import mockRecordsRaw from "@/mock/mockRecords.json"
 
 const mockRecords = mockRecordsRaw as RecordItem[]
@@ -80,23 +104,25 @@ const loading = ref(true)
 const error = ref(false)
 
 const visibleCount = ref(10)
-const visibleRecords = computed(() => records.value.slice(0, visibleCount.value))
+const visibleRecords = computed(() =>
+  records.value.slice(0, visibleCount.value)
+)
 const hasMore = computed(() => visibleCount.value < records.value.length)
 
-
 const loadMore = () => {
-  visibleCount.value += 5;
-};
+  visibleCount.value += 5
+}
 
-const router = useRouter();
+const router = useRouter()
 
 const goToRecord = (date: string) => {
-  router.push(`/record/${date}`);
-};
+  const shortDate = date.slice(0, 10)
+  router.push(`/record/${shortDate}`)
+}
 
 const goToNew = () => {
-  router.push("/record");
-};
+  router.push("/record")
+}
 
 onMounted(async () => {
   try {

@@ -2,7 +2,7 @@
 <template>
   <div
     class="bg-white shadow rounded-xl p-4 space-y-2 hover:bg-gray-50 cursor-pointer transition-all"
-    @click="$emit('click')"
+    @click="$emit('click', record.date)"
   >
     <div class="text-sm text-gray-500">{{ displayDate }}</div>
     <div class="text-base text-gray-800 truncate">{{ previewContent }}</div>
@@ -20,6 +20,7 @@
 
 <script setup lang="ts">
 import type { RecordItem } from '@/types/record';
+import { formatDateForDisplay } from '@/utils/dateUtils';
 
 const { record } = defineProps<{
   record: RecordItem
@@ -27,12 +28,8 @@ const { record } = defineProps<{
 
 const emit = defineEmits(['click'])
 
-/** 顯示的日期格式（可替換成 dateUtils） */
-const displayDate = new Date(record.date).toLocaleDateString('fr-CA', {
-  month: '2-digit',
-  day: '2-digit',
-  weekday: 'short',
-})
+const displayDate = formatDateForDisplay(record.date)
+console.log('%cRecord','color: pink; font-size: 30px;',record);
 
 /** 最多顯示 50 字 */
 const previewContent = record.content.slice(0, 50)
