@@ -1,6 +1,7 @@
 import { onMounted, ref, watch } from "vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
 import type { RecordFormData } from "@/types/record"
+import { getCurrentDate } from "@/utils/dateUtils"
 
 export function useDrafts(formData: RecordFormData, date: string) {
   const hasRestoredDraft = ref(false)
@@ -30,7 +31,8 @@ export function useDrafts(formData: RecordFormData, date: string) {
       clearTimeout(timeout)
       timeout = setTimeout(() => {
         if (formData.content || formData.tags.length > 0) {
-          const now = new Date().toISOString()
+          
+          const now = getCurrentDate()
           LocalStorageService.saveDraft(
             formData.date,
             formData.content,

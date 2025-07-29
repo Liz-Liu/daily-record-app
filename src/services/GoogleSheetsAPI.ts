@@ -16,6 +16,7 @@ export class GoogleSheetsAPI {
     }
 
     const data = (await res.json()) as T
+    console.log('%cGAS回傳的Data','color: pink; font-size: 30px;', data);
     return data
   } catch (err) {
     console.error("❌ 請求失敗", err)
@@ -38,7 +39,7 @@ export class GoogleSheetsAPI {
 
   // ✅ 儲存日記
   static async saveRecord(record: RecordItem): Promise<boolean> {
-    const { date, content, tags, createdAt } = record
+    const { date, content, tags } = record
 
     const res = await fetch(BASE_URL, {
       method: "POST",
@@ -48,8 +49,7 @@ export class GoogleSheetsAPI {
         data: {
           date,
           content,
-          tags,
-          createdAt, // 傳入 createdAt，GAS 自動生成 updatedAt
+          tags
         },
       }),
     })

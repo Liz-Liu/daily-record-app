@@ -29,7 +29,6 @@ const { record } = defineProps<{
 const emit = defineEmits(['click'])
 
 const displayDate = formatDateForDisplay(record.date)
-console.log('%cRecord','color: pink; font-size: 30px;',record);
 
 /** 最多顯示 50 字 */
 const previewContent = record.content.slice(0, 50)

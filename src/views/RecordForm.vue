@@ -293,6 +293,7 @@ async function handleSave() {
       tags: formData.tags,
     }
 
+    console.log('%c送出的Data','color: pink; font-size: 30px;', recordToSave);
     await GoogleSheetsAPI.saveRecord(recordToSave)
 
     // ✅ 儲存成功後清除本地草稿（包含 isDraft, createdAt 等）
