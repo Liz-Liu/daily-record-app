@@ -7,22 +7,43 @@
           @click="goBack"
           class="mr-4 p-2 text-gray-600 hover:text-gray-800 transition-colors rounded-full hover:bg-gray-100"
         >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"
+            ></path>
           </svg>
         </button>
         <div>
           <h1 class="text-2xl font-bold text-gray-800">
-            {{ isEditMode ? (isViewing ? "檢視紀錄" : "編輯紀錄") : "新增紀錄" }}
+            {{
+              isEditMode ? (isViewing ? "檢視紀錄" : "編輯紀錄") : "新增紀錄"
+            }}
           </h1>
           <p class="text-gray-600 text-sm">
-            {{ isEditMode ? (isViewing ? 'View Record' : 'Edit Record') : 'Add New Record' }}
+            {{
+              isEditMode
+                ? isViewing
+                  ? "View Record"
+                  : "Edit Record"
+                : "Add New Record"
+            }}
           </p>
         </div>
       </header>
 
       <!-- Loading State -->
-      <div v-if="isLoading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div
+        v-if="isLoading"
+        class="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+      >
         <div class="animate-pulse space-y-4">
           <div class="h-4 bg-gray-200 rounded w-1/4"></div>
           <div class="h-10 bg-gray-200 rounded"></div>
@@ -47,20 +68,28 @@
         <!-- 切換動畫區塊 -->
         <Transition name="fade-slide" mode="out-in">
           <div :key="isViewing ? 'view' : 'edit'">
-            
             <!-- View Mode (檢視模式) -->
-            <div v-if="isViewing" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+            <div
+              v-if="isViewing"
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6"
+            >
               <!-- Content Display -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-3">內容</label>
-                <div class="text-base text-gray-900 leading-relaxed whitespace-pre-wrap min-h-[120px]">
-                  {{ formData.content || '無內容' }}
+                <label class="block text-sm font-medium text-gray-700 mb-3"
+                  >內容</label
+                >
+                <div
+                  class="text-base text-gray-900 leading-relaxed whitespace-pre-wrap min-h-[120px]"
+                >
+                  {{ formData.content || "無內容" }}
                 </div>
               </div>
 
               <!-- Tags Display -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-3">標籤</label>
+                <label class="block text-sm font-medium text-gray-700 mb-3"
+                  >標籤</label
+                >
                 <div class="flex flex-wrap gap-2">
                   <span
                     v-for="tag in formData.tags"
@@ -69,7 +98,11 @@
                   >
                     #{{ tag }}
                   </span>
-                  <span v-if="formData.tags.length === 0" class="text-base text-gray-400">無標籤</span>
+                  <span
+                    v-if="formData.tags.length === 0"
+                    class="text-base text-gray-400"
+                    >無標籤</span
+                  >
                 </div>
               </div>
 
@@ -93,7 +126,11 @@
             </div>
 
             <!-- Edit Form (編輯模式) -->
-            <form v-else @submit.prevent="handleSave" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
+            <form
+              v-else
+              @submit.prevent="handleSave"
+              class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6"
+            >
               <!-- Content Input -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -108,7 +145,9 @@
                 ></textarea>
                 <div class="flex justify-between items-center mt-1">
                   <p class="text-xs text-gray-500">記錄你的想法和感受</p>
-                  <span class="text-xs text-gray-400">{{ formData.content.length }}/200</span>
+                  <span class="text-xs text-gray-400"
+                    >{{ formData.content.length }}/200</span
+                  >
                 </div>
               </div>
 
@@ -122,21 +161,39 @@
                   @click="cancelEdit"
                   class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
-                  {{ isEditMode ? '取消' : '返回' }}
+                  {{ isEditMode ? "取消" : "返回" }}
                 </button>
                 <button
                   type="submit"
                   :disabled="isSaving || !formData.content.trim()"
                   class="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <span v-if="isSaving" class="flex items-center justify-center">
-                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <span
+                    v-if="isSaving"
+                    class="flex items-center justify-center"
+                  >
+                    <svg
+                      class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      ></circle>
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     儲存中...
                   </span>
-                  <span v-else>{{ isEditMode ? '更新' : '儲存' }}</span>
+                  <span v-else>{{ isEditMode ? "更新" : "儲存" }}</span>
                 </button>
               </div>
 
@@ -150,7 +207,6 @@
                 刪除紀錄
               </button>
             </form>
-
           </div>
         </Transition>
       </div>
@@ -194,7 +250,8 @@ const isLoading = ref(false)
 const isSaving = ref(false)
 
 const rawDate = route.params.date
-const date = typeof rawDate === "string" ? rawDate.slice(0, 10) : getCurrentDate()
+const date =
+  typeof rawDate === "string" ? rawDate.slice(0, 10) : getCurrentDate()
 
 const formData = reactive<RecordFormData>({
   date,
@@ -207,15 +264,15 @@ const { clearDraftAfterSave } = useDrafts(formData, date)
 
 onMounted(async () => {
   isLoading.value = true
-  
+
   try {
     if (!formData.date) {
       const today = getCurrentDate()
       formData.date = today
     }
-    
+
     const localDraft = LocalStorageService.getDraft(formData.date)
-   
+
     if (localDraft) {
       formData.date = localDraft.date
       formData.content = localDraft.content
@@ -252,8 +309,6 @@ onMounted(async () => {
   }
 })
 
-
-
 function enterEditMode() {
   isViewing.value = false
 }
@@ -286,19 +341,47 @@ async function handleSave() {
   isSaving.value = true
 
   try {
-    // ✅ 只挑出要傳給 Google API 的欄位
     const recordToSave = {
       date: formData.date,
       content: formData.content,
       tags: formData.tags,
     }
 
-    console.log('%c送出的Data','color: pink; font-size: 30px;', recordToSave);
-    await GoogleSheetsAPI.saveRecord(recordToSave)
+    console.log("%c送出的Data", "color: green; font-size: 20px;", recordToSave)
 
-    // ✅ 儲存成功後清除本地草稿（包含 isDraft, createdAt 等）
+    if (isEditMode.value) {
+      // 編輯模式：直接更新
+      console.log("✅ 編輯模式 - 更新現有紀錄")
+      await GoogleSheetsAPI.updateRecord(
+        formData.date,
+        formData.content,
+        formData.tags
+      )
+    } else {
+      // 新增模式：檢查是否已有記錄
+      console.log("🆕 新增模式 - 檢查是否已有記錄")
+      const existing = await GoogleSheetsAPI.getRecordByDate(formData.date)
+
+      if (existing) {
+        // 當天已有紀錄，詢問是否覆蓋
+        const confirmOverwrite = window.confirm("當天已有紀錄，確定要覆蓋嗎？")
+        if (confirmOverwrite) {
+          await GoogleSheetsAPI.updateRecord(
+            formData.date,
+            formData.content,
+            formData.tags
+          )
+        } else {
+          return
+        }
+      } else {
+        // 當天無紀錄，建立新記錄
+        console.log("✅ 當天無紀錄 - 建立新記錄")
+        await GoogleSheetsAPI.saveRecord(recordToSave)
+      }
+    }
+
     clearDraftAfterSave()
-
     router.push("/")
   } catch (err) {
     console.error("❌ 儲存失敗", err)
