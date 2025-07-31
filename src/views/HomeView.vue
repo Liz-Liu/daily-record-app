@@ -8,20 +8,39 @@
       </header>
 
       <!-- Loading State -->
-      <div v-if="loading" class="space-y-4">
-        <div
-          v-for="i in 3"
-          :key="i"
-          class="bg-white rounded-lg p-4 animate-pulse"
+      <div v-if="loading" class="flex justify-center items-center">
+        <svg
+          width="300"
+          height="300"
+          viewBox="0 0 120 120"
+          xmlns="http://www.w3.org/2000/svg"
         >
-          <div class="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
-          <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
-          <div class="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-          <div class="flex gap-2">
-            <div class="h-6 bg-gray-200 rounded-full w-16"></div>
-            <div class="h-6 bg-gray-200 rounded-full w-20"></div>
-          </div>
-        </div>
+          <!-- 太陽本體 -->
+          <circle
+            cx="60"
+            cy="60"
+            r="40"
+            fill="#FFD93B"
+            stroke="#F4C534"
+            stroke-width="4"
+          />
+
+          <!-- 👀 眼睛立即出現並眨眼 -->
+          <g class="eye">
+            <circle cx="45" cy="55" r="4" fill="#5F4B32" />
+            <circle cx="75" cy="55" r="4" fill="#5F4B32" />
+          </g>
+
+          <!-- 😄 嘴巴延遲 1 秒才開始微笑，每 4 秒重播 -->
+          <path
+            class="smile"
+            d="M45 75 Q60 85 75 75"
+            stroke="#5F4B32"
+            stroke-width="4"
+            fill="none"
+            stroke-linecap="round"
+          />
+        </svg>
       </div>
 
       <!-- Records List -->
@@ -141,3 +160,52 @@ onMounted(async () => {
   }
 })
 </script>
+<style scoped>
+/* 👀 眼睛每 3 秒眨一次（立即開始） */
+.eye {
+  animation: blink 2s infinite;
+  transform-origin: center;
+}
+
+@keyframes blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  96%,
+  98% {
+    transform: scaleY(0.1);
+  }
+}
+
+/* 😄 嘴巴：延遲 1 秒開始微笑動畫，每 4 秒重播一次 */
+.smile {
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: drawSmile 3s infinite;
+  animation-delay: 1s;
+}
+
+@keyframes drawSmile {
+  0% {
+    stroke-dashoffset: 50;
+    opacity: 0;
+  }
+  10% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  60% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  61% {
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 50;
+    opacity: 0;
+  }
+}
+</style>
