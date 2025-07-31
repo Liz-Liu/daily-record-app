@@ -46,7 +46,17 @@ export function useDrafts(formData: RecordFormData, date: string) {
   )
 
   function clearDraftAfterSave() {
-    LocalStorageService.clearDraft(date)
+    console.log("🔍 Object.is(date, formData.date):", Object.is(date, formData.date))
+    console.log("🔍 date === formData.date:", date === formData.date)
+    console.log("🔍 date:", JSON.stringify(date))
+    console.log("🔍 formData.date:", JSON.stringify(formData.date))
+
+    // 检查 localStorage 中的 key
+    const allDrafts = JSON.parse(localStorage.getItem('daily-record-drafts') || '{}')
+    console.log("🔍 localStorage 中的所有 key:", Object.keys(allDrafts))
+    console.log("🔍 用 date 查找:", allDrafts[date])
+    console.log("🔍 用 formData.date 查找:", allDrafts[formData.date])
+    LocalStorageService.clearDraft(formData.date)
   }
 
   return {

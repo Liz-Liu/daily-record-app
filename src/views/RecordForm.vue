@@ -241,6 +241,7 @@ import TagEditor from "@/components/TagEditor.vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
 import { getCurrentDate } from "@/utils/dateUtils"
 
+
 const route = useRoute()
 const router = useRouter()
 
@@ -251,7 +252,7 @@ const isSaving = ref(false)
 
 const rawDate = route.params.date
 const date =
-  typeof rawDate === "string" ? rawDate.slice(0, 10) : getCurrentDate()
+typeof rawDate === "string" ? rawDate.slice(0, 10) : getCurrentDate()
 
 const formData = reactive<RecordFormData>({
   date,
@@ -347,8 +348,6 @@ async function handleSave() {
       tags: formData.tags,
     }
 
-    console.log("%c送出的Data", "color: green; font-size: 20px;", recordToSave)
-
     if (isEditMode.value) {
       // 編輯模式：直接更新
       console.log("✅ 編輯模式 - 更新現有紀錄")
@@ -382,6 +381,7 @@ async function handleSave() {
     }
 
     clearDraftAfterSave()
+    
     router.push("/")
   } catch (err) {
     console.error("❌ 儲存失敗", err)
