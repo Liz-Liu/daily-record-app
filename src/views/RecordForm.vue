@@ -388,6 +388,10 @@ async function handleSave() {
       }
     }
 
+    // ✅ 儲存最近使用的標籤
+    LocalStorageService.saveLastUseTags(formData.tags)
+
+    // ✅ 儲存成功後清除草稿
     clearDraftAfterSave()
 
     router.push("/")
