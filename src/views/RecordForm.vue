@@ -157,12 +157,22 @@
               <!-- Edit Form Action Buttons -->
               <div class="flex gap-3 pt-4">
                 <button
+                  v-if="isEditMode"
                   type="button"
-                  @click="cancelEdit"
+                  @click="handleDelete"
+                  class="flex-1 px-4 py-2 border border-red-300 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400 transition-colors"
+                >
+                  刪除紀錄
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  @click="goBack"
                   class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
-                  {{ isEditMode ? "取消" : "返回" }}
+                  返回
                 </button>
+
                 <button
                   type="submit"
                   :disabled="isSaving || !formData.content.trim()"
@@ -196,16 +206,6 @@
                   <span v-else>{{ isEditMode ? "更新" : "儲存" }}</span>
                 </button>
               </div>
-
-              <!-- Delete Button (僅編輯模式顯示) -->
-              <button
-                v-if="isEditMode"
-                type="button"
-                @click="handleDelete"
-                class="w-full mt-2 text-red-600 text-sm underline hover:text-red-800 transition-colors"
-              >
-                刪除紀錄
-              </button>
             </form>
           </div>
         </Transition>
@@ -241,7 +241,6 @@ import TagEditor from "@/components/TagEditor.vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
 import { getCurrentDate } from "@/utils/dateUtils"
 
-
 const route = useRoute()
 const router = useRouter()
 
@@ -252,7 +251,7 @@ const isSaving = ref(false)
 
 const rawDate = route.params.date
 const date =
-typeof rawDate === "string" ? rawDate.slice(0, 10) : getCurrentDate()
+  typeof rawDate === "string" ? rawDate.slice(0, 10) : getCurrentDate()
 
 const formData = reactive<RecordFormData>({
   date,
@@ -261,7 +260,11 @@ const formData = reactive<RecordFormData>({
   isDraft: true,
 })
 
-const { clearDraftAfterSave } = useDrafts(formData, date)
+const {
+  clearDraftAfterSave,
+  clearDraft,
+  cancelAutoSave
+} = useDrafts(formData, date)
 
 onMounted(async () => {
   isLoading.value = true
@@ -314,22 +317,27 @@ function enterEditMode() {
   isViewing.value = false
 }
 
-function cancelEdit() {
-  if (isEditMode.value) {
-    isViewing.value = true
-  } else {
-    goBack()
-  }
-}
 
 function goBack() {
+  cancelAutoSave()
+  if (isEditMode.value) {
+    clearDraft()
+  }
   router.push("/")
 }
 
-function handleDelete() {
+
+async function handleDelete() {
   const confirmDelete = window.confirm("確定刪除這筆紀錄？")
-  if (confirmDelete) {
+  if (!confirmDelete) return
+
+  try {
+    await GoogleSheetsAPI.deleteRecord(formData.date)
+    alert("已刪除")
     router.push("/")
+  } catch (err) {
+    console.error("❌ 刪除失敗", err)
+    alert("刪除失敗，請稍後再試")
   }
 }
 
@@ -381,7 +389,7 @@ async function handleSave() {
     }
 
     clearDraftAfterSave()
-    
+
     router.push("/")
   } catch (err) {
     console.error("❌ 儲存失敗", err)

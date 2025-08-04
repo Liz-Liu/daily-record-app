@@ -4,7 +4,7 @@ import type { RecordFormData } from "@/types/record"
 import { getCurrentDate } from "@/utils/dateUtils"
 
 export function useDrafts(formData: RecordFormData, date: string) {
-  const hasRestoredDraft = ref(false)
+  let timeout: number | null = null
 
   onMounted(() => {
     const draft = LocalStorageService.getDraft(date)
@@ -17,21 +17,19 @@ export function useDrafts(formData: RecordFormData, date: string) {
         formData.createdAt = draft.createdAt
         formData.updatedAt = draft.updatedAt
         formData.isDraft = true
-        hasRestoredDraft.value = true
       }
     }
 
     LocalStorageService.cleanupExpiredDrafts()
   })
 
-  let timeout: number
+  // ✅ 自動儲存草稿（2秒延遲）
   watch(
     () => [formData.content, formData.tags],
     () => {
-      clearTimeout(timeout)
+      if (timeout) clearTimeout(timeout)
       timeout = setTimeout(() => {
         if (formData.content || formData.tags.length > 0) {
-          
           const now = getCurrentDate()
           LocalStorageService.saveDraft(
             formData.date,
@@ -45,22 +43,24 @@ export function useDrafts(formData: RecordFormData, date: string) {
     { deep: true }
   )
 
+  // ✅ 儲存成功後清除草稿
   function clearDraftAfterSave() {
-    console.log("🔍 Object.is(date, formData.date):", Object.is(date, formData.date))
-    console.log("🔍 date === formData.date:", date === formData.date)
-    console.log("🔍 date:", JSON.stringify(date))
-    console.log("🔍 formData.date:", JSON.stringify(formData.date))
-
-    // 检查 localStorage 中的 key
-    const allDrafts = JSON.parse(localStorage.getItem('daily-record-drafts') || '{}')
-    console.log("🔍 localStorage 中的所有 key:", Object.keys(allDrafts))
-    console.log("🔍 用 date 查找:", allDrafts[date])
-    console.log("🔍 用 formData.date 查找:", allDrafts[formData.date])
     LocalStorageService.clearDraft(formData.date)
   }
 
+  // ✅ 返回或取消時用：手動清除草稿
+  function clearDraft() {
+    LocalStorageService.clearDraft(formData.date)
+  }
+
+  // ✅ 返回或取消時用：取消 auto-save 計時器
+  function cancelAutoSave() {
+    if (timeout) clearTimeout(timeout)
+  }
+
   return {
-    hasRestoredDraft,
     clearDraftAfterSave,
+    clearDraft,
+    cancelAutoSave,
   }
 }

@@ -80,4 +80,26 @@ export class GoogleSheetsAPI {
     if (!res.ok) throw new Error("更新失敗！！！")
     return true
   }
+
+  // ✅ 刪除
+  static async deleteRecord(date: string): Promise<boolean> {
+    const res = await fetch(BASE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // 保持一致
+      body: JSON.stringify({
+        action: "deleteRecord",
+        data: { date },
+      }),
+      redirect: "follow",
+      credentials: "omit",
+    })
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      console.error("❌ 刪除失敗回應:", errorText)
+      throw new Error("刪除失敗！！！")
+    }
+
+    return true
+  }
 }
