@@ -152,7 +152,12 @@
               </div>
 
               <!-- Tag Editor -->
-              <TagEditor v-model="formData.tags" />
+              <TagEditor
+                v-model="formData.tags"
+                :recentTags="lastUsedTags"
+                @addRecentTag="handleAddRecentTag"
+                @removeRecentTag="handleRemoveRecentTag"
+              />
 
               <!-- Edit Form Action Buttons -->
               <div class="flex gap-3 pt-4">
@@ -254,17 +259,16 @@ const date =
   typeof rawDate === "string" ? rawDate.slice(0, 10) : getCurrentDate()
 
 const formData = reactive<RecordFormData>({
-  date,
+  date: isEditMode.value ? date : getCurrentDate(), // 編輯模式用 URL 的日期，新增模式用今天
   content: "",
   tags: [],
   isDraft: true,
 })
 
-const {
-  clearDraftAfterSave,
-  clearDraft,
-  cancelAutoSave
-} = useDrafts(formData, date)
+const { clearDraftAfterSave, clearDraft, cancelAutoSave } = useDrafts(
+  formData,
+  date
+)
 
 onMounted(async () => {
   isLoading.value = true
@@ -275,17 +279,26 @@ onMounted(async () => {
       formData.date = today
     }
 
-    const localDraft = LocalStorageService.getDraft(formData.date)
+    const localDraft = formData.date
+      ? LocalStorageService.getDraft(formData.date)
+      : null
 
+    // 先檢查本地草稿（不分編輯或新增模式
     if (localDraft) {
       formData.date = localDraft.date
       formData.content = localDraft.content
       formData.tags = localDraft.tags
       formData.isDraft = true
+      console.log("📝 載入本地草稿：", {
+        mode: isEditMode.value ? "編輯模式" : "新增模式",
+        content: formData.content,
+        tags: formData.tags,
+      })
       return
     }
 
     if (isEditMode.value) {
+      // 編輯模式：載入遠端資料
       try {
         const record = await GoogleSheetsAPI.getRecordByDate(date)
         if (record) {
@@ -293,6 +306,7 @@ onMounted(async () => {
           formData.content = record.content
           formData.tags = record.tags
           formData.isDraft = false
+          console.log("✅ 編輯模式 - 載入已存在紀錄：", { tags: formData.tags })
         } else {
           alert("找不到該筆資料")
           router.push("/")
@@ -302,11 +316,13 @@ onMounted(async () => {
         alert("載入失敗，請稍後再試")
       }
     } else {
+      // 新增模式：全新空白
       formData.date = date
       formData.content = ""
-      formData.tags = LocalStorageService.getLastUsedTags()
+      formData.tags = [] // 新增模式，tags 初始化為空陣列
       formData.isDraft = true
       isViewing.value = false // 新增模式直接進入編輯
+      console.log("🆕 新增模式 - 全新初始化：", { tags: formData.tags })
     }
   } finally {
     isLoading.value = false
@@ -317,7 +333,6 @@ function enterEditMode() {
   isViewing.value = false
 }
 
-
 function goBack() {
   cancelAutoSave()
   if (isEditMode.value) {
@@ -325,7 +340,6 @@ function goBack() {
   }
   router.push("/")
 }
-
 
 async function handleDelete() {
   const confirmDelete = window.confirm("確定刪除這筆紀錄？")
@@ -355,6 +369,8 @@ async function handleSave() {
       content: formData.content,
       tags: formData.tags,
     }
+
+    console.log("💾 準備儲存：", recordToSave)
 
     if (isEditMode.value) {
       // 編輯模式：直接更新
@@ -390,6 +406,7 @@ async function handleSave() {
 
     // ✅ 儲存最近使用的標籤
     LocalStorageService.saveLastUseTags(formData.tags)
+    console.log("🏷️ 儲存最近使用標籤：", formData.tags)
 
     // ✅ 儲存成功後清除草稿
     clearDraftAfterSave()
@@ -401,5 +418,21 @@ async function handleSave() {
   } finally {
     isSaving.value = false
   }
+}
+
+const lastUsedTags = ref(LocalStorageService.getLastUsedTags())
+
+function handleAddRecentTag(tag: string) {
+  if (!lastUsedTags.value.includes(tag)) {
+    const updated = [...lastUsedTags.value, tag]
+    lastUsedTags.value = updated
+    LocalStorageService.saveLastUseTags(updated)
+  }
+}
+
+function handleRemoveRecentTag(tagToRemove: string) {
+  const updated = lastUsedTags.value.filter((t) => t !== tagToRemove)
+  lastUsedTags.value = updated
+  LocalStorageService.saveLastUseTags(updated)
 }
 </script>
