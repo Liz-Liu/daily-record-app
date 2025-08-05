@@ -68,7 +68,7 @@
           <!-- <label class="block text-sm font-medium text-gray-700 mb-3"
             >日期</label
           > -->
-          <div class="text-2xl font-serif text-gray-700 mb-1">
+          <div class="text-2xl font-serif text-gray-900 mb-1">
             {{ formatDateForDisplay(formData.date) }}
           </div>
         </div>
@@ -105,6 +105,16 @@
             >
           </div>
         </div>
+
+         <!-- Timestamp info -->
+    <div class="mt-3 pt-2 border-t border-gray-100">
+      <div class="flex flex-col text-xs space-y-1 text-gray-400">
+        <span>建立: {{ formatTimestampForDisplay(formData.createdAt) }}</span>
+        <span v-if="formData.updatedAt !== formData.createdAt">
+          更新: {{ formatTimestampForDisplay(formData.updatedAt) }}
+        </span>
+      </div>
+    </div>
 
         <!-- View Mode Action Buttons -->
         <div class="flex gap-3 pt-4">
@@ -236,7 +246,7 @@ import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI"
 import DatePicker from "@/components/DatePicker.vue"
 import TagEditor from "@/components/TagEditor.vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
-import { getCurrentDate, formatDateForDisplay } from "@/utils/dateUtils"
+import { getCurrentDate, formatDateForDisplay, formatTimestampForDisplay } from "@/utils/dateUtils"
 
 const route = useRoute()
 const router = useRouter()
@@ -300,6 +310,8 @@ onMounted(async () => {
       formData.content = localDraft.content
       formData.tags = localDraft.tags
       formData.isDraft = true
+      formData.createdAt = localDraft.createdAt
+      formData.updatedAt = localDraft.updatedAt
       return
     }
 
@@ -312,6 +324,8 @@ onMounted(async () => {
           formData.content = record.content
           formData.tags = record.tags
           formData.isDraft = false
+          formData.createdAt = record.createdAt
+          formData.updatedAt = record.updatedAt
         } else {
           alert("找不到該筆資料")
           router.push("/")

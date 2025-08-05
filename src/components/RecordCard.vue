@@ -1,26 +1,46 @@
 <!-- src/components/RecordCard.vue -->
 <template>
   <div
-    class="bg-white shadow rounded-xl p-4 space-y-2 hover:bg-gray-50 cursor-pointer transition-all"
+    class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 active:scale-[0.98]"
     @click="$emit('click', record.date)"
   >
-    <div class="text-sm text-gray-500">{{ displayDate }}</div>
-    <div class="text-base text-gray-800 truncate">{{ previewContent }}</div>
-    <div class="flex flex-wrap gap-2">
+    <!-- Date Header -->
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-lg font-serif font-medium text-gray-900">
+        {{ displayDate }}
+      </h3>
+    </div>
+
+    <!-- Content Preview -->
+    <div class="mb-5">
+      <p class="text-gray-700 text-sm leading-relaxed">
+        {{ previewContent }}
+      </p>
+    </div>
+
+    <!-- Tags -->
+    <div v-if="record.tags.length > 0" class="flex flex-wrap gap-2">
       <span
-        v-for="(tag, index) in displayTags"
-        :key="index"
-        class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full"
+        v-for="tag in displayTags"
+        :key="tag"
+        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
       >
         #{{ tag }}
+      </span>
+      <span
+        v-if="hasMoreTags"
+        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+      >
+        +{{ record.tags.length - 5 }}
       </span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { RecordItem } from '@/types/record';
-import { formatDateForDisplay } from '@/utils/dateUtils';
+import { computed } from 'vue'
+import type { RecordItem } from '@/types/record'
+import { formatDateForDisplay } from '@/utils/dateUtils'
 
 const { record } = defineProps<{
   record: RecordItem
@@ -33,6 +53,21 @@ const displayDate = formatDateForDisplay(record.date)
 /** 最多顯示 50 字 */
 const previewContent = record.content.slice(0, 50)
 
-/** 最多顯示 3 個 tag */
-const displayTags = record.tags.slice(0, 3)
+/** 最多顯示 5 個 tag */
+const displayTags = computed(() => record.tags.slice(0, 5))
+const hasMoreTags = computed(() => record.tags.length > 5)
 </script>
+
+<style scoped>
+/* Mobile-optimized styles */
+@media (max-width: 640px) {
+  .cursor-pointer:active {
+    transform: scale(0.98);
+  }
+
+  /* Larger touch targets on mobile */
+  .cursor-pointer {
+    min-height: 44px;
+  }
+}
+</style>

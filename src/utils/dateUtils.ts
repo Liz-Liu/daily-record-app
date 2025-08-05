@@ -44,8 +44,29 @@ export function formatDateForDisplay(dateString: string): string {
   return `${datePart} ${capitalizeFirstLetter(weekdayPart)}`
 }
 
+
+// 將 ISO 字串轉為「YYYY-MM-DD HH:mm:ss」格式（本地時間）
+export function formatTimestampForDisplay(isoString?: string): string {
+  if (!isoString) return ""
+
+  const date = new Date(isoString)
+  if (isNaN(date.getTime())) return "Invalid Date"
+
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, "0")
+  const dd = String(date.getDate()).padStart(2, "0")
+  const hh = String(date.getHours()).padStart(2, "0")
+  const mi = String(date.getMinutes()).padStart(2, "0")
+  const ss = String(date.getSeconds()).padStart(2, "0")
+
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`
+}
+
+
 // ✅ 首字大寫
 function capitalizeFirstLetter(text: string): string {
   if (!text || text.length === 0) return ""
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
+
+
