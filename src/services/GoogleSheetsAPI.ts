@@ -16,7 +16,6 @@ export class GoogleSheetsAPI {
       }
 
       const data = (await res.json()) as T
-      console.log("%cGAS回傳的Data", "color: pink; font-size: 30px;", data)
       return data
     } catch (err) {
       console.error("❌ 請求失敗", err)

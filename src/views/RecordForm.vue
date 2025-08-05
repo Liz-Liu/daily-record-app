@@ -177,6 +177,13 @@
                 >
                   返回
                 </button>
+                <button
+                  type="button"
+                  @click="handleSaveDraft"
+                  class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                >
+                  儲存草稿
+                </button>
 
                 <button
                   type="submit"
@@ -236,7 +243,7 @@
 </style>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue"
+import { ref, reactive, computed, onMounted, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import type { RecordFormData } from "@/types/record"
 import { useDrafts } from "@/composables/useDrafts"
@@ -270,6 +277,28 @@ const { clearDraftAfterSave, clearDraft, cancelAutoSave } = useDrafts(
   date
 )
 
+const isInitialized = ref(false)
+
+watch(
+  () => formData.date,
+  (newDate) => {
+    if (!isInitialized.value) {
+      isInitialized.value = true
+      return
+    }
+
+    const draft = LocalStorageService.getDraft(newDate)
+    if (draft) {
+      const confirmLoad = window.confirm("這天已有草稿，要載入嗎？")
+      if (confirmLoad) {
+        formData.content = draft.content
+        formData.tags = draft.tags
+        formData.isDraft = true
+      }
+    }
+  }
+)
+
 onMounted(async () => {
   isLoading.value = true
 
@@ -289,11 +318,6 @@ onMounted(async () => {
       formData.content = localDraft.content
       formData.tags = localDraft.tags
       formData.isDraft = true
-      console.log("📝 載入本地草稿：", {
-        mode: isEditMode.value ? "編輯模式" : "新增模式",
-        content: formData.content,
-        tags: formData.tags,
-      })
       return
     }
 
@@ -306,7 +330,6 @@ onMounted(async () => {
           formData.content = record.content
           formData.tags = record.tags
           formData.isDraft = false
-          console.log("✅ 編輯模式 - 載入已存在紀錄：", { tags: formData.tags })
         } else {
           alert("找不到該筆資料")
           router.push("/")
@@ -322,7 +345,6 @@ onMounted(async () => {
       formData.tags = [] // 新增模式，tags 初始化為空陣列
       formData.isDraft = true
       isViewing.value = false // 新增模式直接進入編輯
-      console.log("🆕 新增模式 - 全新初始化：", { tags: formData.tags })
     }
   } finally {
     isLoading.value = false
@@ -370,11 +392,8 @@ async function handleSave() {
       tags: formData.tags,
     }
 
-    console.log("💾 準備儲存：", recordToSave)
-
     if (isEditMode.value) {
       // 編輯模式：直接更新
-      console.log("✅ 編輯模式 - 更新現有紀錄")
       await GoogleSheetsAPI.updateRecord(
         formData.date,
         formData.content,
@@ -382,7 +401,6 @@ async function handleSave() {
       )
     } else {
       // 新增模式：檢查是否已有記錄
-      console.log("🆕 新增模式 - 檢查是否已有記錄")
       const existing = await GoogleSheetsAPI.getRecordByDate(formData.date)
 
       if (existing) {
@@ -399,14 +417,12 @@ async function handleSave() {
         }
       } else {
         // 當天無紀錄，建立新記錄
-        console.log("✅ 當天無紀錄 - 建立新記錄")
         await GoogleSheetsAPI.saveRecord(recordToSave)
       }
     }
 
     // ✅ 儲存最近使用的標籤
     LocalStorageService.saveLastUseTags(formData.tags)
-    console.log("🏷️ 儲存最近使用標籤：", formData.tags)
 
     // ✅ 儲存成功後清除草稿
     clearDraftAfterSave()
@@ -418,6 +434,19 @@ async function handleSave() {
   } finally {
     isSaving.value = false
   }
+}
+
+function handleSaveDraft() {
+  const now = new Date().toISOString()
+
+  LocalStorageService.saveDraft(
+    formData.date,
+    formData.content,
+    formData.tags,
+    now
+  )
+
+  alert("草稿已儲存")
 }
 
 const lastUsedTags = ref(LocalStorageService.getLastUsedTags())

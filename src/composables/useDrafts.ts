@@ -1,4 +1,4 @@
-import { onMounted,  watch } from "vue"
+import { onMounted, watch } from "vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
 import type { RecordFormData } from "@/types/record"
 import { getCurrentDate } from "@/utils/dateUtils"
@@ -22,26 +22,6 @@ export function useDrafts(formData: RecordFormData, date: string) {
 
     LocalStorageService.cleanupExpiredDrafts()
   })
-
-  // ✅ 自動儲存草稿（2秒延遲）
-  watch(
-    () => [formData.content, formData.tags],
-    () => {
-      if (timeout) clearTimeout(timeout)
-      timeout = setTimeout(() => {
-        if (formData.content || formData.tags.length > 0) {
-          const now = getCurrentDate()
-          LocalStorageService.saveDraft(
-            formData.date,
-            formData.content,
-            formData.tags,
-            now
-          )
-        }
-      }, 2000)
-    },
-    { deep: true }
-  )
 
   // ✅ 儲存成功後清除草稿
   function clearDraftAfterSave() {
