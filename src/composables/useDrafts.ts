@@ -1,7 +1,6 @@
-import { onMounted, watch } from "vue"
+import { onMounted } from "vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
 import type { RecordFormData } from "@/types/record"
-import { getCurrentDate } from "@/utils/dateUtils"
 
 export function useDrafts(formData: RecordFormData, date: string) {
   let timeout: number | null = null
@@ -28,10 +27,7 @@ export function useDrafts(formData: RecordFormData, date: string) {
     LocalStorageService.clearDraft(formData.date)
   }
 
-  // ✅ 返回或取消時用：手動清除草稿
-  function clearDraft() {
-    LocalStorageService.clearDraft(formData.date)
-  }
+
 
   // ✅ 返回或取消時用：取消 auto-save 計時器
   function cancelAutoSave() {
@@ -40,7 +36,6 @@ export function useDrafts(formData: RecordFormData, date: string) {
 
   return {
     clearDraftAfterSave,
-    clearDraft,
     cancelAutoSave,
   }
 }
