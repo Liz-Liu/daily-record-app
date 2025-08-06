@@ -9,7 +9,7 @@ const app = createApp(App)
 app.use(router)
 
 
-app.config.errorHandler = (err, instance, info) => {
+app.config.errorHandler = (err, info) => {
   console.error('Vue 全域錯誤：', err, info)
 }
 
