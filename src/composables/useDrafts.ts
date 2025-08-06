@@ -2,15 +2,14 @@ import { onMounted } from "vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
 import type { RecordFormData } from "@/types/record"
 
-export function useDrafts(formData: RecordFormData, date: string) {
-  let timeout: number | null = null
+export function useDrafts(formData: RecordFormData) {
 
   onMounted(() => {
-    const draft = LocalStorageService.getDraft(date)
+    const draft = LocalStorageService.getDraft(formData.date)
     if (draft) {
+
       const shouldRestore = window.confirm("發現尚未儲存的草稿，是否要還原？")
       if (shouldRestore) {
-        formData.date = draft.date
         formData.content = draft.content
         formData.tags = draft.tags
         formData.createdAt = draft.createdAt
@@ -28,14 +27,7 @@ export function useDrafts(formData: RecordFormData, date: string) {
   }
 
 
-
-  // ✅ 返回或取消時用：取消 auto-save 計時器
-  function cancelAutoSave() {
-    if (timeout) clearTimeout(timeout)
-  }
-
   return {
     clearDraftAfterSave,
-    cancelAutoSave,
   }
 }

@@ -106,15 +106,17 @@
           </div>
         </div>
 
-         <!-- Timestamp info -->
-    <div class="mt-3 pt-2 border-t border-gray-100">
-      <div class="flex flex-col text-xs space-y-1 text-gray-400">
-        <span>建立: {{ formatTimestampForDisplay(formData.createdAt) }}</span>
-        <span v-if="formData.updatedAt !== formData.createdAt">
-          更新: {{ formatTimestampForDisplay(formData.updatedAt) }}
-        </span>
-      </div>
-    </div>
+        <!-- Timestamp info -->
+        <div class="mt-3 pt-2 border-t border-gray-100">
+          <div class="flex flex-col text-xs space-y-1 text-gray-400">
+            <span
+              >建立: {{ formatTimestampForDisplay(formData.createdAt) }}</span
+            >
+            <span v-if="formData.updatedAt !== formData.createdAt">
+              更新: {{ formatTimestampForDisplay(formData.updatedAt) }}
+            </span>
+          </div>
+        </div>
 
         <!-- View Mode Action Buttons -->
         <div class="flex gap-3 pt-4">
@@ -198,13 +200,13 @@
             @click="handleSaveDraft"
             class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
           >
-            草稿
+            儲存草稿
           </button>
 
           <!-- Save Button -->
           <button
             type="submit"
-            :disabled="isSaving || !formData.content.trim()"
+            :disabled="isSaving"
             class="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <span v-if="isSaving" class="flex items-center justify-center">
@@ -246,7 +248,11 @@ import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI"
 import DatePicker from "@/components/DatePicker.vue"
 import TagEditor from "@/components/TagEditor.vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
-import { getCurrentDate, formatDateForDisplay, formatTimestampForDisplay } from "@/utils/dateUtils"
+import {
+  getCurrentDate,
+  formatDateForDisplay,
+  formatTimestampForDisplay,
+} from "@/utils/dateUtils"
 
 const route = useRoute()
 const router = useRouter()
@@ -267,18 +273,11 @@ const formData = reactive<RecordFormData>({
   isDraft: true,
 })
 
-const { clearDraftAfterSave } = useDrafts(formData, date)
-
-const isInitialized = ref(false)
+const { clearDraftAfterSave } = useDrafts(formData)
 
 watch(
   () => formData.date,
   (newDate) => {
-    if (!isInitialized.value) {
-      isInitialized.value = true
-      return
-    }
-
     const draft = LocalStorageService.getDraft(newDate)
     if (draft) {
       const confirmLoad = window.confirm("這天已有草稿，要載入嗎？")
@@ -296,8 +295,7 @@ onMounted(async () => {
 
   try {
     if (!formData.date) {
-      const today = getCurrentDate()
-      formData.date = today
+      formData.date = getCurrentDate()
     }
 
     const localDraft = formData.date
@@ -306,7 +304,6 @@ onMounted(async () => {
 
     // 先檢查本地草稿（不分編輯或新增模式
     if (localDraft) {
-      formData.date = localDraft.date
       formData.content = localDraft.content
       formData.tags = localDraft.tags
       formData.isDraft = true
@@ -320,7 +317,6 @@ onMounted(async () => {
       try {
         const record = await GoogleSheetsAPI.getRecordByDate(date)
         if (record) {
-          formData.date = record.date
           formData.content = record.content
           formData.tags = record.tags
           formData.isDraft = false
@@ -335,12 +331,7 @@ onMounted(async () => {
         alert("載入失敗，請稍後再試")
       }
     } else {
-      // 新增模式：全新空白
-      formData.date = date
-      formData.content = ""
-      formData.tags = [] // 新增模式，tags 初始化為空陣列
-      formData.isDraft = true
-      isViewing.value = false // 新增模式直接進入編輯
+      isViewing.value = false
     }
   } finally {
     isLoading.value = false
@@ -370,9 +361,9 @@ async function handleDelete() {
 }
 
 async function handleSave() {
-  if (!formData.content.trim()) {
-    alert("請輸入內容")
-    return
+  
+  if (!formData.date || formData.date.trim() === "") {
+    formData.date = getCurrentDate()
   }
 
   isSaving.value = true

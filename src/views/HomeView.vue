@@ -3,8 +3,8 @@
     <div class="container mx-auto px-4 py-6 max-w-2xl">
       <!-- Header -->
       <header class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">每日紀錄</h1>
-        <p class="text-gray-600">記錄生活的每一天</p>
+        <h1 class="text-3xl font-bold text-gray-700 mb-2">每日紀錄</h1>
+        <p class="text-sm font-serif text-gray-500">Des petits riens qui font tout </p>
       </header>
 
       <!-- Loading State -->
@@ -13,6 +13,7 @@
           width="300"
           height="300"
           viewBox="0 0 120 120"
+          
           xmlns="http://www.w3.org/2000/svg"
         >
           <!-- 太陽本體 -->
