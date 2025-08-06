@@ -4,7 +4,7 @@
       <!-- Header -->
       <header class="mb-8">
         <h1 class="text-3xl font-bold text-gray-700 mb-2">每日紀錄</h1>
-        <p class="text-sm font-serif text-gray-500">Des petits riens qui font tout </p>
+        <p class="text-sm font-serif text-gray-500">Des petits riens qui font tout ✨ </p>
       </header>
 
       <!-- Loading State -->
