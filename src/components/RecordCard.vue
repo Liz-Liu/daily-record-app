@@ -48,10 +48,10 @@ const { record } = defineProps<{
 
 const emit = defineEmits(['click'])
 
-const displayDate = formatDateForDisplay(record.date)
+const displayDate = computed(() => formatDateForDisplay(record.date))
 
 /** 最多顯示 50 字 */
-const previewContent = record.content.slice(0, 50)
+const previewContent = computed(() => record.content.slice(0, 50))
 
 /** 最多顯示 5 個 tag */
 const displayTags = computed(() => record.tags.slice(0, 5))
