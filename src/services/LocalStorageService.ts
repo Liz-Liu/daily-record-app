@@ -78,13 +78,23 @@ export class LocalStorageService {
 
   // --- 私有工具方法 ---
   private static getDrafts(): DraftStorage {
-    const raw = localStorage.getItem(DRAFT_KEY)
-    return raw ? JSON.parse(raw) : {}
+    return this.safeGetItem<DraftStorage>(DRAFT_KEY, {})
   }
 
   private static getSettings(): SettingsStorage {
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    return raw ? JSON.parse(raw) : { lastUsedTags: [] }
+    return this.safeGetItem<SettingsStorage>(SETTINGS_KEY, { lastUsedTags: [] })
+  }
+
+  private static safeGetItem<T>(key: string, fallback: T): T {
+    const raw = localStorage.getItem(key)
+    if (!raw) return fallback
+
+    try {
+      return JSON.parse(raw) as T
+    } catch (error) {
+      console.error(`⚠️ localStorage 解析失敗: ${key}`, error)
+      return fallback
+    }
   }
 
   private static safeSetItem(key: string, value: any) {
