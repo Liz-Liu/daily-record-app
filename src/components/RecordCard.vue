@@ -1,19 +1,19 @@
 <!-- src/components/RecordCard.vue -->
 <template>
   <div
-    class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 active:scale-[0.98]"
+    class="bg-white rounded-lg shadow-sm border border-gray-200 p-5 mb-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200 active:scale-[0.98]"
     @click="$emit('click', record.date)"
   >
     <!-- Date Header -->
     <div class="flex items-center justify-between mb-3">
-      <h3 class="text-lg font-serif font-medium text-gray-900">
+      <h3 class="text-3xl font-serif font-medium text-gray-900">
         {{ displayDate }}
       </h3>
     </div>
 
     <!-- Content Preview -->
     <div class="mb-5">
-      <p class="text-gray-700 text-sm leading-relaxed">
+      <p class="text-gray-700 text-base leading-relaxed">
         {{ previewContent }}
       </p>
     </div>
@@ -23,13 +23,13 @@
       <span
         v-for="tag in displayTags"
         :key="tag"
-        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+        class="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
       >
         #{{ tag }}
       </span>
       <span
         v-if="hasMoreTags"
-        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+        class="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600"
       >
         +{{ record.tags.length - 5 }}
       </span>
@@ -51,7 +51,7 @@ const emit = defineEmits(['click'])
 const displayDate = computed(() => formatDateForDisplay(record.date))
 
 /** 最多顯示 50 字 */
-const previewContent = computed(() => record.content.slice(0, 50))
+const previewContent = computed(() => record.content)
 
 /** 最多顯示 5 個 tag */
 const displayTags = computed(() => record.tags.slice(0, 5))

@@ -74,7 +74,7 @@ const focusInput = () => {
           <span
             v-for="(tag, index) in tags"
             :key="index"
-            class="inline-flex items-center pl-4 pr-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 group"
+            class="inline-flex items-center pl-4 pr-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 group"
           >
             #{{ tag }}
             <button
@@ -113,7 +113,7 @@ const focusInput = () => {
         <span
           v-for="(tag, index) in recentTags"
           :key="'recent-' + index"
-          class="inline-flex items-center pl-4 pr-2 py-1 rounded-full text-xs font-medium group"
+          class="inline-flex items-center pl-4 pr-2 py-1 rounded-full text-sm font-medium group"
           :class="[
             tags.includes(tag)
               ? 'bg-gray-100 text-gray-400 opacity-50'

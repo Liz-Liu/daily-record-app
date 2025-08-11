@@ -185,16 +185,7 @@
             刪除
           </button>
 
-          <!-- Cancel/Back Button -->
-          <!-- <button
-            type="button"
-            @click="isEditMode ? (isViewing = true) : goBack()"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-          >
-            {{ isEditMode ? "取消" : "返回" }}
-          </button> -->
 
-          <!-- Save Draft Button -->
           <button
             type="button"
             @click="handleSaveDraft"
