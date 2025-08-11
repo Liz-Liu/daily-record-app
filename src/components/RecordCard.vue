@@ -6,7 +6,7 @@
   >
     <!-- Date Header -->
     <div class="flex items-center justify-between mb-3">
-      <h3 class="text-3xl font-serif font-medium text-gray-900">
+      <h3 class="text-2xl font-serif font-medium text-gray-900">
         {{ displayDate }}
       </h3>
     </div>
