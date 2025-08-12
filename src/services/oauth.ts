@@ -23,6 +23,7 @@ export async function startLoginRedirect() {
   if (!CLIENT_ID || !REDIRECT_URI) {
     throw new Error("OAuth 設定缺失，請檢查環境變數")
   }
+  
   console.log("完整域名檢查:")
   console.log("window.location.hostname:", window.location.hostname)
   console.log("window.location.origin:", window.location.origin)
@@ -30,39 +31,42 @@ export async function startLoginRedirect() {
     "是否為 vercel.app 子域名:",
     window.location.hostname.endsWith(".vercel.app")
   )
-  const state = crypto.randomUUID()
 
-  // 使用 PKCE 流程（安全的前端做法）
+  const state = crypto.randomUUID()
   const codeVerifier = randomString(43)
   const codeChallenge = await sha256(codeVerifier)
 
-  // 儲存狀態和驗證碼
   sessionStorage.setItem("oauth_state", state)
   sessionStorage.setItem("pkce_verifier", codeVerifier)
 
+  // 動態生成正確的 redirect_uri
+  const dynamicRedirectUri = `${window.location.origin}/callback`
+  console.log("動態 redirect_uri:", dynamicRedirectUri)
+  console.log("環境變數 REDIRECT_URI:", REDIRECT_URI)
+
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: dynamicRedirectUri, // 使用動態生成的，確保準確
     response_type: "code",
     scope: SCOPE,
     state,
     access_type: "offline",
     include_granted_scopes: "true",
     prompt: "select_account",
-    // PKCE 參數
     code_challenge: codeChallenge,
     code_challenge_method: "S256",
   })
 
   const authUrl = `${OAUTH_AUTH_URL}?${params.toString()}`
-  console.log("跳轉到:", authUrl)
-  window.location.href = authUrl
-
   console.log("Generated auth URL:", authUrl)
   console.log("Code verifier length:", codeVerifier.length)
   console.log("Code challenge length:", codeChallenge.length)
-}
+  
+  // 儲存使用的 redirect_uri 以供 callback 使用
+  sessionStorage.setItem("used_redirect_uri", dynamicRedirectUri)
 
+  window.location.href = authUrl
+}
 export async function handleOAuthCallback(
   query: URLSearchParams
 ): Promise<OAuthTokens> {
@@ -85,18 +89,21 @@ export async function handleOAuthCallback(
     throw new Error("狀態參數不相符")
   }
 
-  // 使用 PKCE 驗證碼
   const codeVerifier = sessionStorage.getItem("pkce_verifier")
   if (!codeVerifier) {
     throw new Error("PKCE 驗證碼遺失")
   }
 
+  // 使用與授權時相同的 redirect_uri
+  const usedRedirectUri = sessionStorage.getItem("used_redirect_uri") || `${window.location.origin}/callback`
+  console.log("Token 交換使用的 redirect_uri:", usedRedirectUri)
+
   const tokenRequestData = new URLSearchParams({
     code,
     client_id: CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: usedRedirectUri,
     grant_type: "authorization_code",
-    code_verifier: codeVerifier, // 使用 PKCE 而不是 client_secret
+    code_verifier: codeVerifier,
   })
 
   try {
@@ -126,7 +133,6 @@ export async function handleOAuthCallback(
     const tokens = await response.json()
     console.log("Token 交換成功")
 
-    // 計算過期時間並儲存 tokens
     const expiresAt = Date.now() + tokens.expires_in * 1000
     const storedTokenData: OAuthTokens = {
       ...tokens,
@@ -138,6 +144,7 @@ export async function handleOAuthCallback(
     // 清理暫存儲存
     sessionStorage.removeItem("oauth_state")
     sessionStorage.removeItem("pkce_verifier")
+    sessionStorage.removeItem("used_redirect_uri")
 
     return storedTokenData
   } catch (fetchError) {
