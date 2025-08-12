@@ -91,12 +91,11 @@ export class GoogleSheetsAPI {
   static async saveRecord(record: RecordItem): Promise<boolean> {
     const { date, content, tags } = record
 
-    const res = await this.makeRequest<any>("POST", {
+    await this.makeRequest<any>("POST", {
       action: "saveRecord",
       data: { date, content, tags },
     })
 
-    if (!res.ok) throw new Error("儲存失敗！！！")
     return true
   }
 
@@ -106,27 +105,20 @@ export class GoogleSheetsAPI {
     content: string,
     tags: string[]
   ): Promise<boolean> {
-    const res = await this.makeRequest<any>("POST", {
+    await this.makeRequest<any>("POST", {
       action: "updateRecord",
       data: { date, content, tags },
     })
 
-    if (!res.ok) throw new Error("更新失敗！！！")
     return true
   }
 
   // ✅ 刪除
   static async deleteRecord(date: string): Promise<boolean> {
-    const res = await this.makeRequest<any>("POST", {
+    await this.makeRequest<any>("POST", {
       action: "deleteRecord",
       data: { date },
     })
-
-    if (!res.ok) {
-      const errorText = await res.text()
-      console.error("❌ 刪除失敗回應:", errorText)
-      throw new Error("刪除失敗！！！")
-    }
 
     return true
   }
