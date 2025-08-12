@@ -1,5 +1,5 @@
 // composables/useAuth.ts
-import { computed, onMounted } from "vue"
+import { computed, onMounted, watch } from "vue"
 import { useRouter } from "vue-router"
 import { useAuthStore } from "@/stores/auth"
 import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI"
@@ -25,17 +25,28 @@ export function useAuth() {
 
   const initAuth = async () => {
     if (AUTH_ENABLED) {
-      const autoLoginSuccess = await tryAutoLogin()
+      console.log("初始化認證狀態...")
+      authStore.initAuth()
 
-      if (autoLoginSuccess) {
-        const token = getIdToken()
-        if (token) {
-          GoogleSheetsAPI.setAuthToken(token)
-          console.log("Google Sheets API token 已設定")
-        } else {
-          GoogleSheetsAPI.setAuthToken(null)
-          console.log("無有效 token，清除 Google Sheets API token")
+      // 如果沒有認證狀態，嘗試自動登入
+      if (!authStore.isAuthenticated) {
+        console.log("嘗試自動登入...")
+        const autoLoginSuccess = await tryAutoLogin()
+
+        if (autoLoginSuccess) {
+          // 自動登入成功後，重新初始化 auth store
+          authStore.initAuth()
+          console.log("自動登入成功，狀態已更新")
         }
+      }
+
+      const token = getIdToken()
+      if (token) {
+        GoogleSheetsAPI.setAuthToken(token)
+        console.log("Google Sheets API token 已設定")
+      } else {
+        GoogleSheetsAPI.setAuthToken(null)
+        console.log("無有效 token，清除 Google Sheets API token")
       }
     } else {
       // 公開模式
@@ -43,6 +54,15 @@ export function useAuth() {
       console.log("公開模式：Google Sheets API 無需 token")
     }
   }
+
+    // 監聽認證狀態變化，自動更新 API token
+  watch(() => authStore.isAuthenticated, (newValue) => {
+    if (AUTH_ENABLED) {
+      const token = newValue ? getIdToken() : null
+      GoogleSheetsAPI.setAuthToken(token)
+      console.log('認證狀態變化，API token 已更新:', !!token)
+    }
+  })
 
   const logout = () => {
     if (AUTH_ENABLED) {

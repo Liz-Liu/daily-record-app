@@ -1,6 +1,6 @@
 // stores/auth.ts
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { getIdToken, getStoredTokens } from '@/services/oauth'
 
 const AUTH_ENABLED = import.meta.env.VITE_AUTH_ENABLED === 'true'
@@ -17,9 +17,19 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => {
     if (!AUTH_ENABLED) return true
     
-    // 檢查是否有有效的 token
+    // 檢查用戶資料和 token 是否都存在
+    const hasProfile = !!profile.value
     const idToken = getIdToken()
-    return !!idToken && !!profile.value
+    const hasValidToken = !!idToken
+    
+    console.log('認證狀態檢查:', {
+      hasProfile,
+      hasValidToken,
+      profileEmail: profile.value?.email,
+      tokenExists: !!idToken
+    })
+    
+    return hasProfile && hasValidToken
   })
 
   const isPrivateMode = computed(() => AUTH_ENABLED)
@@ -28,13 +38,26 @@ export const useAuthStore = defineStore('auth', () => {
   // 從 OAuth tokens 中設定認證資訊
   function setAuth(idToken: string, userProfile: UserProfile) {
     if (AUTH_ENABLED) {
+
+      console.log('設定認證資訊開始:', userProfile)
       profile.value = userProfile
       
       // 儲存用戶資料到 localStorage（作為備份）
       localStorage.setItem('user_profile', JSON.stringify(userProfile))
       
-      console.log('認證資訊已設定:', userProfile)
-      console.log('ID Token 已接收，長度:', idToken.length)
+      nextTick(() => {
+        console.log('認證資訊已設定:', userProfile)
+        console.log('ID Token 已接收，長度:', idToken.length)
+        console.log('認證狀態更新完成:', isAuthenticated.value)
+        
+        // 如果狀態仍然是 false，強制檢查原因
+        if (!isAuthenticated.value) {
+          console.warn('認證狀態異常，進行診斷:')
+          console.warn('Profile:', profile.value)
+          console.warn('ID Token from storage:', getIdToken())
+          console.warn('Stored tokens:', getStoredTokens())
+        }
+      })
     }
   }
 
@@ -48,6 +71,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   function initAuth() {
     if (AUTH_ENABLED) {
+      console.log('初始化認證狀態...')
+      
       // 檢查是否有有效的 tokens
       const tokens = getStoredTokens()
       
@@ -79,7 +104,7 @@ export const useAuthStore = defineStore('auth', () => {
           }
         }
       } else {
-        // 沒有有效 tokens，清理所有資料
+        console.log('沒有有效 tokens，清理所有資料')
         logout()
       }
     }
@@ -109,6 +134,16 @@ export const useAuthStore = defineStore('auth', () => {
     return getIdToken()
   })
 
+   // 強制檢查認證狀態（用於診斷）
+  function forceCheckAuth() {
+    console.log('強制檢查認證狀態:')
+    console.log('Profile:', profile.value)
+    console.log('ID Token:', getIdToken())
+    console.log('Stored Tokens:', getStoredTokens())
+    console.log('Is Authenticated:', isAuthenticated.value)
+    return isAuthenticated.value
+  }
+
   // 初始化
   initAuth()
 
@@ -120,6 +155,7 @@ export const useAuthStore = defineStore('auth', () => {
     idToken,
     setAuth, 
     logout,
-    initAuth
+    initAuth,
+    forceCheckAuth
   }
 })
