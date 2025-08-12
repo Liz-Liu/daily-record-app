@@ -1,8 +1,8 @@
 import { randomString, sha256 } from "@/utils/pkce"
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string
-const REDIRECT_URI = import.meta.env.VITE_GOOGLE_OAUTH_REDIRECT_URI as string
-const SCOPE = (import.meta.env.VITE_GOOGLE_OAUTH_SCOPE as string) || 'openid'
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
+const REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI as string
+const SCOPE = (import.meta.env.VITE_GOOGLE_SCOPE as string) || 'openid'
 
 const OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
