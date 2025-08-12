@@ -127,7 +127,7 @@ export async function handleOAuthCallback(
       expAt: expiresAt,
     }
 
-    sessionStorage.setItem('oauth_tokens', JSON.stringify(storedTokenData))
+    setTokensWithMixedStorage(storedTokenData)
 
     // 清理暫存儲存
     sessionStorage.removeItem("oauth_state")
@@ -145,7 +145,7 @@ export async function handleOAuthCallback(
 }
 
 export function getAccessToken(): string | null {
-  const raw = localStorage.getItem("oauth_tokens")
+  const raw = sessionStorage.getItem("oauth_tokens") 
   if (!raw) return null
 
   try {
@@ -154,20 +154,20 @@ export function getAccessToken(): string | null {
     // 檢查是否過期
     if (Date.now() >= tokens.expAt) {
       console.log("Access token 已過期")
-      localStorage.removeItem("oauth_tokens")
+      sessionStorage.removeItem("oauth_tokens")
       return null
     }
 
     return tokens.access_token
   } catch (error) {
     console.error("解析 tokens 錯誤:", error)
-    localStorage.removeItem("oauth_tokens")
+    sessionStorage.removeItem("oauth_tokens") 
     return null
   }
 }
 
 export function getIdToken(): string | null {
-  const raw = localStorage.getItem("oauth_tokens")
+  const raw = sessionStorage.getItem("oauth_tokens")
   if (!raw) return null
 
   try {
@@ -176,20 +176,20 @@ export function getIdToken(): string | null {
     // 檢查是否過期
     if (Date.now() >= tokens.expAt) {
       console.log("ID token 已過期")
-      localStorage.removeItem("oauth_tokens")
+      sessionStorage.removeItem("oauth_tokens")
       return null
     }
 
     return tokens.id_token || null
   } catch (error) {
     console.error("解析 tokens 錯誤:", error)
-    localStorage.removeItem("oauth_tokens")
+    sessionStorage.removeItem("oauth_tokens")
     return null
   }
 }
 
 export function getStoredTokens(): OAuthTokens | null {
-  const raw = localStorage.getItem("oauth_tokens")
+  const raw = sessionStorage.getItem("oauth_tokens")
   if (!raw) return null
 
   try {
@@ -197,14 +197,14 @@ export function getStoredTokens(): OAuthTokens | null {
 
     // 檢查是否過期
     if (Date.now() >= tokens.expAt) {
-      localStorage.removeItem("oauth_tokens")
+      sessionStorage.removeItem("oauth_tokens")
       return null
     }
 
     return tokens
   } catch (error) {
     console.error("解析 tokens 錯誤:", error)
-    localStorage.removeItem("oauth_tokens")
+    sessionStorage.removeItem("oauth_tokens")
     return null
   }
 }
@@ -214,19 +214,36 @@ export function isLoggedIn(): boolean {
 }
 
 export function logout() {
-  localStorage.removeItem("oauth_tokens")
+ // 清理 sessionStorage
+  sessionStorage.removeItem("oauth_tokens")
   sessionStorage.removeItem("oauth_state")
   sessionStorage.removeItem("pkce_verifier")
+  
+  // 清理 localStorage
+  localStorage.removeItem("oauth_persistent")
+  localStorage.removeItem("user_profile")
   console.log("已登出")
 }
 
-// 可選：刷新 token 功能
+// 刷新 token 功能
 export async function refreshAccessToken(): Promise<OAuthTokens | null> {
-  const tokens = getStoredTokens()
+  // 先嘗試從當前 session 獲取
+  let tokens = getStoredTokens()
+  
+  
+  // 如果 session 中沒有，嘗試從 localStorage 的 refresh_token 自動登入
   if (!tokens?.refresh_token) {
-    console.log("沒有 refresh token 可用")
-    return null
+    const refreshToken = getRefreshTokenFromPersistent()
+    if (!refreshToken) {
+      console.log("沒有 refresh token 可用")
+      return null
+    }
+    
+    // 使用持久化的 refresh_token
+    tokens = { refresh_token: refreshToken } as OAuthTokens
   }
+
+  
 
   try {
     const response = await fetch(OAUTH_TOKEN_URL, {
@@ -238,7 +255,7 @@ export async function refreshAccessToken(): Promise<OAuthTokens | null> {
       body: new URLSearchParams({
         client_id: CLIENT_ID,
         grant_type: "refresh_token",
-        refresh_token: tokens.refresh_token,
+        refresh_token: tokens.refresh_token!,
       }),
     })
 
@@ -257,13 +274,71 @@ export async function refreshAccessToken(): Promise<OAuthTokens | null> {
       expAt: expiresAt,
     }
 
-    localStorage.setItem("oauth_tokens", JSON.stringify(updatedTokens))
+    setTokensWithMixedStorage(updatedTokens)
     console.log("Access token 已刷新")
 
     return updatedTokens
   } catch (error) {
     console.error("刷新 token 錯誤:", error)
     logout()
+    return null
+  }
+}
+
+// 新增：自動恢復登入狀態功能
+export async function tryAutoLogin(): Promise<boolean> {
+  console.log('嘗試自動登入...')
+  
+  // 檢查是否已經有有效的 session token
+  const currentTokens = getStoredTokens()
+  if (currentTokens?.access_token) {
+    console.log('已有有效的 session token')
+    return true
+  }
+  
+  // 嘗試使用 refresh_token 自動登入
+  const refreshedTokens = await refreshAccessToken()
+  if (refreshedTokens) {
+    console.log('自動登入成功')
+    return true
+  }
+  
+  console.log('無法自動登入，需要重新認證')
+  return false
+}
+
+// 混合存儲策略函數
+export function setTokensWithMixedStorage(tokens: OAuthTokens) {
+  // 敏感的 access_token 和 id_token 放 sessionStorage
+  const sensitiveTokens = {
+    access_token: tokens.access_token,
+    id_token: tokens.id_token,
+    token_type: tokens.token_type,
+    expAt: tokens.expAt,
+    expires_in: tokens.expires_in
+  }
+  sessionStorage.setItem('oauth_tokens', JSON.stringify(sensitiveTokens))
+  
+  // 非敏感的 refresh_token 和 scope 放 localStorage（用於記住登入狀態）
+  if (tokens.refresh_token) {
+    const persistentData = {
+      refresh_token: tokens.refresh_token,
+      scope: tokens.scope,
+      client_id: CLIENT_ID
+    }
+    localStorage.setItem('oauth_persistent', JSON.stringify(persistentData))
+  }
+}
+
+export function getRefreshTokenFromPersistent(): string | null {
+  const raw = localStorage.getItem('oauth_persistent')
+  if (!raw) return null
+  
+  try {
+    const data = JSON.parse(raw)
+    return data.refresh_token || null
+  } catch {
+    localStorage.removeItem('oauth_persistent')
     return null
   }
 }
