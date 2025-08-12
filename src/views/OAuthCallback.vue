@@ -30,7 +30,8 @@
           </svg>
         </div>
         <h2 class="text-xl font-medium mb-2 text-green-600">登入成功</h2>
-        <p class="text-gray-600">正在跳轉...</p>
+        <p class="text-gray-600 mb-2">歡迎回來，{{ userInfo?.name || userInfo?.email }}</p>
+        <p class="text-sm text-gray-500">正在跳轉...</p>
       </div>
     </div>
   </div>
@@ -48,6 +49,7 @@ const authStore = useAuthStore()
 
 const isProcessing = ref(true)
 const error = ref<string | null>(null)
+const userInfo = ref<{ email: string; name?: string } | null>(null)
 
 const goBack = () => {
   router.push('/login')
@@ -57,18 +59,16 @@ onMounted(async () => {
   try {
     console.log('開始處理 OAuth callback...')
     
-
     const query = new URLSearchParams(window.location.search)
-    
     console.log('URL 參數:', Object.fromEntries(query.entries()))
     
-   
+    // 檢查是否有錯誤
     if (query.has('error')) {
       const errorMsg = query.get('error_description') || query.get('error') || '認證失敗'
       throw new Error(errorMsg)
     }
     
-   
+    // 檢查授權碼
     const code = query.get('code')
     if (!code) {
       throw new Error('未收到授權碼')
@@ -76,45 +76,49 @@ onMounted(async () => {
     
     console.log('收到授權碼，開始交換 token...')
     
-  
+    // 使用純 PKCE 流程交換 token
     const tokens = await handleOAuthCallback(query)
+    console.log('Token 交換成功')
     
-    console.log('Token 交换成功:', tokens)
-    
-   
+    // 處理 ID token
     if (tokens.id_token) {
       const payload = parseJWT(tokens.id_token)
-      console.log('用戶資訊:', payload)
+      console.log('解析用戶資訊:', payload)
       
-    
-      authStore.setAuth(tokens.id_token, {
+      const userProfile = {
         email: payload.email,
-        name: payload.name || payload.given_name || payload.email
-      })
+        name: payload.name || payload.given_name || payload.email,
+        picture: payload.picture
+      }
       
-    
+      userInfo.value = userProfile
+      
+      // 設定認證資訊到 store
+      authStore.setAuth(tokens.id_token, userProfile)
+      
+      // 設定 Google Sheets API token
       GoogleSheetsAPI.setAuthToken(tokens.id_token)
       
-      console.log('認證訊息已保存，準備跳轉至首頁')
+      console.log('認證資訊已儲存，準備跳轉至首頁')
       
-     
+      // 延遲跳轉，讓用戶看到成功訊息
       setTimeout(() => {
         console.log('跳轉至首頁')
         router.replace('/') 
-      }, 1000)
+      }, 1500)
     } else {
       throw new Error('未收到 ID Token')
     }
     
   } catch (err) {
-    console.error('OAuth callback error:', err)
+    console.error('OAuth callback 處理錯誤:', err)
     error.value = err instanceof Error ? err.message : '未知錯誤'
   } finally {
     isProcessing.value = false
   }
 })
 
-
+// 解析 JWT token
 function parseJWT(token: string) {
   try {
     const base64Url = token.split('.')[1]
