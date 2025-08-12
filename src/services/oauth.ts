@@ -1,44 +1,44 @@
 import { randomString, sha256 } from "@/utils/pkce"
 
-// 使用正确的变量名
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
+const CLIENT_SECRET = import.meta.env.VITE_GOOGLE_CLIENT_SECRET as string // 新增
 const REDIRECT_URI = import.meta.env.VITE_GOOGLE_REDIRECT_URI as string
 const SCOPE = (import.meta.env.VITE_GOOGLE_SCOPES as string) || 'openid email profile'
-
 const OAUTH_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
 export async function startLoginRedirect() {
   if (!CLIENT_ID || !REDIRECT_URI) {
-    throw new Error('OAuth 配置缺失，請檢查環境變數')
+    throw new Error('OAuth 設定缺失，請檢查環境變數')
   }
-
+  
   const state = crypto.randomUUID()
-  const codeVerifier = randomString(128) 
-  const codeChallenge = await sha256(codeVerifier)
-
-  // 保存到 sessionStorage
+  
+  // 儲存狀態
   sessionStorage.setItem('oauth_state', state)
-  sessionStorage.setItem('pkce_verifier', codeVerifier)
-
-  console.log('PKCE Info:', {
-    codeVerifier: codeVerifier.substring(0, 10) + '...',
-    codeChallenge: codeChallenge.substring(0, 10) + '...',
-    state: state
-  })
-
+  
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     response_type: 'code',
     scope: SCOPE,
     state,
-    code_challenge: codeChallenge,
-    code_challenge_method: 'S256',
     access_type: 'offline',
     include_granted_scopes: 'true',
-    prompt: 'select_account', // 改为 select_account
+    prompt: 'select_account',
   })
+
+  // 如果有 client_secret，不使用 PKCE
+  if (!CLIENT_SECRET) {
+    // 使用 PKCE 流程
+    const codeVerifier = randomString(128)
+    const codeChallenge = await sha256(codeVerifier)
+    
+    sessionStorage.setItem('pkce_verifier', codeVerifier)
+    
+    params.append('code_challenge', codeChallenge)
+    params.append('code_challenge_method', 'S256')
+  }
 
   const authUrl = `${OAUTH_AUTH_URL}?${params.toString()}`
   console.log('跳轉到:', authUrl)
@@ -46,60 +46,47 @@ export async function startLoginRedirect() {
 }
 
 export async function handleOAuthCallback(query: URLSearchParams) {
-  console.log('開始處理 OAuth callback...')
+  console.log('開始處理 OAuth 回呼...')
   
   const code = query.get('code')
   const state = query.get('state')
   const error = query.get('error')
   
-  console.log('callback 參數:', { 
-    hasCode: !!code, 
-    hasState: !!state, 
-    error 
-  })
-  
   if (error) {
     throw new Error(`OAuth 錯誤: ${error}`)
   }
   
-  if (!code) {
-    throw new Error('未收到授權碼')
-  }
-  
-  if (!state) {
-    throw new Error('未收到狀態參數')
+  if (!code || !state) {
+    throw new Error('缺少必要的回呼參數')
   }
 
   const savedState = sessionStorage.getItem('oauth_state')
-  const codeVerifier = sessionStorage.getItem('pkce_verifier')
-  
-  console.log('狀態驗證:', { 
-    receivedState: state, 
-    savedState, 
-    hasCodeVerifier: !!codeVerifier 
-  })
-
   if (state !== savedState) {
-    throw new Error('狀態參數不匹配，可能有安全風險')
-  }
-  
-  if (!codeVerifier) {
-    throw new Error('PKCE 驗證碼遺失')
+    throw new Error('狀態參數不相符')
   }
 
-  // 准备 Token 交换请求
-  const tokenData = {
+  // 準備 Token 交換請求
+  const tokenData: Record<string, string> = {
     code,
     client_id: CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     grant_type: 'authorization_code',
-    code_verifier: codeVerifier,
   }
-  
-  console.log('Token 交換請求數據:', {
-    ...tokenData,
-    code_verifier: codeVerifier.substring(0, 10) + '...'
-  })
+
+  // 根據是否有 client_secret 選擇認證方式
+  if (CLIENT_SECRET) {
+    // 使用 client_secret 認證
+    tokenData.client_secret = CLIENT_SECRET
+    console.log('使用 client_secret 認證')
+  } else {
+    // 使用 PKCE 認證
+    const codeVerifier = sessionStorage.getItem('pkce_verifier')
+    if (!codeVerifier) {
+      throw new Error('PKCE 驗證碼遺失')
+    }
+    tokenData.code_verifier = codeVerifier
+    console.log('使用 PKCE 認證')
+  }
 
   try {
     const response = await fetch(OAUTH_TOKEN_URL, {
@@ -111,52 +98,39 @@ export async function handleOAuthCallback(query: URLSearchParams) {
       body: new URLSearchParams(tokenData),
     })
 
-    console.log('Token 交换回應狀態:', response.status)
-
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Token 交換失敗:', errorText)
       
-      // 尝试解析错误信息
       try {
         const errorData = JSON.parse(errorText)
-        throw new Error(`Token 交換失敗: ${errorData.error_description || errorData.error}`)
+        throw new Error(`認證失敗: ${errorData.error_description || errorData.error}`)
       } catch {
-        throw new Error(`Token 交換失敗 (${response.status}): ${errorText}`)
+        throw new Error(`認證失敗 (${response.status})`)
       }
     }
 
     const tokens = await response.json()
-    console.log('Token 交换成功:', {
-      hasAccessToken: !!tokens.access_token,
-      hasIdToken: !!tokens.id_token,
-      hasRefreshToken: !!tokens.refresh_token,
-      expiresIn: tokens.expires_in
-    })
+    console.log('Token 交換成功')
 
-    // 清理 session storage
+    // 清理儲存
     sessionStorage.removeItem('oauth_state')
     sessionStorage.removeItem('pkce_verifier')
 
-    return tokens as {
-      access_token: string
-      expires_in: number
-      refresh_token?: string
-      id_token?: string
-      token_type: 'Bearer'
-    }
-
+    return tokens
   } catch (fetchError) {
     console.error('網路請求錯誤:', fetchError)
-    throw new Error(`網路請求失敗: ${fetchError instanceof Error ? fetchError.message : '未知错误'}`)
+    throw new Error(`網路請求失敗: ${fetchError instanceof Error ? fetchError.message : '未知錯誤'}`)
   }
 }
 
 export function getAccessToken(): string | null {
   const raw = localStorage.getItem('oauth_tokens')
   if (!raw) return null
+  
   const t = JSON.parse(raw)
   if (Date.now() >= t.expAt) return null
+  
   return t.access_token as string
 }
 
