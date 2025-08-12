@@ -23,7 +23,13 @@ export async function startLoginRedirect() {
   if (!CLIENT_ID || !REDIRECT_URI) {
     throw new Error("OAuth 設定缺失，請檢查環境變數")
   }
-
+  console.log("完整域名檢查:")
+  console.log("window.location.hostname:", window.location.hostname)
+  console.log("window.location.origin:", window.location.origin)
+  console.log(
+    "是否為 vercel.app 子域名:",
+    window.location.hostname.endsWith(".vercel.app")
+  )
   const state = crypto.randomUUID()
 
   // 使用 PKCE 流程（安全的前端做法）
@@ -145,7 +151,7 @@ export async function handleOAuthCallback(
 }
 
 export function getAccessToken(): string | null {
-  const raw = sessionStorage.getItem("oauth_tokens") 
+  const raw = sessionStorage.getItem("oauth_tokens")
   if (!raw) return null
 
   try {
@@ -161,7 +167,7 @@ export function getAccessToken(): string | null {
     return tokens.access_token
   } catch (error) {
     console.error("解析 tokens 錯誤:", error)
-    sessionStorage.removeItem("oauth_tokens") 
+    sessionStorage.removeItem("oauth_tokens")
     return null
   }
 }
@@ -214,11 +220,11 @@ export function isLoggedIn(): boolean {
 }
 
 export function logout() {
- // 清理 sessionStorage
+  // 清理 sessionStorage
   sessionStorage.removeItem("oauth_tokens")
   sessionStorage.removeItem("oauth_state")
   sessionStorage.removeItem("pkce_verifier")
-  
+
   // 清理 localStorage
   localStorage.removeItem("oauth_persistent")
   localStorage.removeItem("user_profile")
@@ -229,8 +235,7 @@ export function logout() {
 export async function refreshAccessToken(): Promise<OAuthTokens | null> {
   // 先嘗試從當前 session 獲取
   let tokens = getStoredTokens()
-  
-  
+
   // 如果 session 中沒有，嘗試從 localStorage 的 refresh_token 自動登入
   if (!tokens?.refresh_token) {
     const refreshToken = getRefreshTokenFromPersistent()
@@ -238,12 +243,10 @@ export async function refreshAccessToken(): Promise<OAuthTokens | null> {
       console.log("沒有 refresh token 可用")
       return null
     }
-    
+
     // 使用持久化的 refresh_token
     tokens = { refresh_token: refreshToken } as OAuthTokens
   }
-
-  
 
   try {
     const response = await fetch(OAUTH_TOKEN_URL, {
@@ -287,23 +290,23 @@ export async function refreshAccessToken(): Promise<OAuthTokens | null> {
 
 // 新增：自動恢復登入狀態功能
 export async function tryAutoLogin(): Promise<boolean> {
-  console.log('嘗試自動登入...')
-  
+  console.log("嘗試自動登入...")
+
   // 檢查是否已經有有效的 session token
   const currentTokens = getStoredTokens()
   if (currentTokens?.access_token) {
-    console.log('已有有效的 session token')
+    console.log("已有有效的 session token")
     return true
   }
-  
+
   // 嘗試使用 refresh_token 自動登入
   const refreshedTokens = await refreshAccessToken()
   if (refreshedTokens) {
-    console.log('自動登入成功')
+    console.log("自動登入成功")
     return true
   }
-  
-  console.log('無法自動登入，需要重新認證')
+
+  console.log("無法自動登入，需要重新認證")
   return false
 }
 
@@ -315,30 +318,30 @@ export function setTokensWithMixedStorage(tokens: OAuthTokens) {
     id_token: tokens.id_token,
     token_type: tokens.token_type,
     expAt: tokens.expAt,
-    expires_in: tokens.expires_in
+    expires_in: tokens.expires_in,
   }
-  sessionStorage.setItem('oauth_tokens', JSON.stringify(sensitiveTokens))
-  
+  sessionStorage.setItem("oauth_tokens", JSON.stringify(sensitiveTokens))
+
   // 非敏感的 refresh_token 和 scope 放 localStorage（用於記住登入狀態）
   if (tokens.refresh_token) {
     const persistentData = {
       refresh_token: tokens.refresh_token,
       scope: tokens.scope,
-      client_id: CLIENT_ID
+      client_id: CLIENT_ID,
     }
-    localStorage.setItem('oauth_persistent', JSON.stringify(persistentData))
+    localStorage.setItem("oauth_persistent", JSON.stringify(persistentData))
   }
 }
 
 export function getRefreshTokenFromPersistent(): string | null {
-  const raw = localStorage.getItem('oauth_persistent')
+  const raw = localStorage.getItem("oauth_persistent")
   if (!raw) return null
-  
+
   try {
     const data = JSON.parse(raw)
     return data.refresh_token || null
   } catch {
-    localStorage.removeItem('oauth_persistent')
+    localStorage.removeItem("oauth_persistent")
     return null
   }
 }
