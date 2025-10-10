@@ -51,7 +51,6 @@ const handleTagRemove = (tag: string, event?: Event) => {
   // 確認是否要刪除
   if (confirm(`確定要從歷史記錄中永久移除標籤「${tag}」嗎？`)) {
     emit("tagRemove", tag)
-  } else {
   }
 }
 
@@ -100,6 +99,7 @@ const totalTagsCount = computed(() => {
         </span>
 
         <button
+          type="button"
           v-if="!isTagSelected(tag)"
           @click.stop="handleTagRemove(tag, $event)"
           class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 focus:outline-none focus:bg-blue-200"
