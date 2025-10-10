@@ -85,7 +85,7 @@ const handleTagRemoveFromHistory = (tag: string) => {
         class="min-h-[42px] w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus-within:ring-1 focus-within:ring-blue-500 focus-within:border-blue-500 cursor-text"
         @click="focusInput"
       >
-        <div class="flex flex-wrap gap-1 items-center">
+        <div class="flex flex-wrap gap-2 items-center">
           <!-- Existing tags -->
           <span
             v-for="(tag, index) in tags"
@@ -111,16 +111,12 @@ const handleTagRemoveFromHistory = (tag: string) => {
             v-model="inputValue"
             type="text"
             class="flex-1 min-w-[120px] border-none outline-none bg-transparent text-sm placeholder-gray-400"
-            placeholder="輸入標籤後按 Enter"
+            placeholder="輸入後按 Enter 新增標籤"
             @keydown="handleKeydown"
           />
         </div>
       </div>
 
-      <!-- Helper text -->
-      <p class="mt-1 text-xs text-gray-500">
-        按 Enter 新增標籤，點擊 × 或按 Backspace 從當前選擇中移除標籤
-      </p>
     </div>
 
     <!-- Tag History Selector -->
