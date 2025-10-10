@@ -1,17 +1,21 @@
 import type { RecordItem } from "@/types/record"
 
 const DRAFT_KEY = "daily-record-drafts"
-const SETTINGS_KEY = "daily-record-settings"
+const TAG_HISTORY_KEY = "daily-record-tag-history"
 
 interface DraftStorage {
   [date: string]: RecordItem
 }
 
-interface SettingsStorage {
-  lastUsedTags: string[]
+interface TagHistoryStorage {
+  [tag: string]: number  // tag: lastUsed timestamp
 }
 
+
 export class LocalStorageService {
+
+  // ==================== 草稿相關 ====================
+  
   // 儲存單筆草稿
   static saveDraft(
     date: string,
@@ -63,27 +67,73 @@ export class LocalStorageService {
     this.safeSetItem(DRAFT_KEY, drafts)
   }
 
-  // 記錄最近使用的標籤（儲存整組）
-  static saveLastUseTags(tags: string[]) {
-    const settings: SettingsStorage = this.getSettings()
-    settings.lastUsedTags = tags
-    this.safeSetItem(SETTINGS_KEY, settings)
+
+  // ==================== 標籤歷史記錄 ====================
+  
+  // 取得所有標籤歷史
+  static getTagHistory(): TagHistoryStorage {
+    return this.safeGetItem<TagHistoryStorage>(TAG_HISTORY_KEY, {})
   }
 
-  static getLastUsedTags(): string[] {
-    const settings: SettingsStorage = this.getSettings()
-    return settings.lastUsedTags || []
+  // 儲存標籤歷史
+  static saveTagHistory(tagHistory: TagHistoryStorage): void {
+    this.safeSetItem(TAG_HISTORY_KEY, tagHistory)
+  }
+
+  // 新增或更新單個標籤到歷史（只記錄最後使用時間，不計數）
+  static addTagToHistory(tag: string): void {
+    const trimmedTag = tag.trim()
+    if (!trimmedTag) return
+
+    const history = this.getTagHistory()
+    
+    // 只更新最後使用時間，不計數
+    history[trimmedTag] = Date.now()
+
+    this.saveTagHistory(history)
+  }
+
+  // 從歷史中移除標籤
+  static removeTagFromHistory(tag: string): void {
+    const history = this.getTagHistory()
+    delete history[tag]
+    this.saveTagHistory(history)
+  }
+
+  // 批次新增標籤到歷史（通常在送出表單時使用）
+  static addTagsToHistory(tags: string[]): void {
+    const history = this.getTagHistory()
+    const now = Date.now()
+    
+    tags.forEach(tag => {
+      const trimmedTag = tag.trim()
+      if (trimmedTag) {
+        history[trimmedTag] = now
+      }
+    })
+
+    this.saveTagHistory(history)
+  }
+
+  // 取得所有歷史標籤（按最近使用排序）
+  static getAllHistoricalTags(): string[] {
+    const history = this.getTagHistory()
+    return Object.keys(history).sort((a, b) => {
+      return history[b] - history[a]
+    })
+  }
+
+  // 清除所有標籤歷史
+  static clearTagHistory(): void {
+    this.safeSetItem(TAG_HISTORY_KEY, {})
   }
 
 
-  // --- 私有工具方法 ---
+  // ==================== 私有工具方法 ====================
   private static getDrafts(): DraftStorage {
     return this.safeGetItem<DraftStorage>(DRAFT_KEY, {})
   }
 
-  private static getSettings(): SettingsStorage {
-    return this.safeGetItem<SettingsStorage>(SETTINGS_KEY, { lastUsedTags: [] })
-  }
 
   private static safeGetItem<T>(key: string, fallback: T): T {
     const raw = localStorage.getItem(key)

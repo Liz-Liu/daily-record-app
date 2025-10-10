@@ -165,13 +165,9 @@
           </div>
         </div>
 
-        <!-- Tag Editor -->
-        <TagEditor
-          v-model="formData.tags"
-          :recentTags="lastUsedTags"
-          @addRecentTag="handleAddRecentTag"
-          @removeRecentTag="handleRemoveRecentTag"
-        />
+         <!-- Tag Editor -->
+        <TagEditor v-model="formData.tags" />
+
 
         <!-- Edit Form Action Buttons -->
         <div class="flex gap-3 pt-4">
@@ -239,6 +235,7 @@ import { GoogleSheetsAPI } from "@/services/GoogleSheetsAPI"
 import DatePicker from "@/components/DatePicker.vue"
 import TagEditor from "@/components/TagEditor.vue"
 import { LocalStorageService } from "@/services/LocalStorageService"
+import { useTagStore } from "@/stores/tagStore"
 import {
   getCurrentDate,
   formatDateForDisplay,
@@ -247,6 +244,7 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const tagStore = useTagStore()
 
 const isEditMode = computed(() => !!route.params.date)
 const isViewing = ref(route.params.date ? true : false)
@@ -395,9 +393,8 @@ async function handleSave() {
       }
     }
 
-    // ✅ 儲存最近使用的標籤
-    LocalStorageService.saveLastUseTags(formData.tags)
-
+     // ✅ 將標籤加入歷史記錄（使用 tagStore）
+    tagStore.addTagsToHistory(formData.tags)
     // ✅ 儲存成功後清除草稿
     clearDraftAfterSave()
 
@@ -423,19 +420,4 @@ function handleSaveDraft() {
   alert("草稿已儲存")
 }
 
-const lastUsedTags = ref(LocalStorageService.getLastUsedTags())
-
-function handleAddRecentTag(tag: string) {
-  if (!lastUsedTags.value.includes(tag)) {
-    const updated = [...lastUsedTags.value, tag]
-    lastUsedTags.value = updated
-    LocalStorageService.saveLastUseTags(updated)
-  }
-}
-
-function handleRemoveRecentTag(tagToRemove: string) {
-  const updated = lastUsedTags.value.filter((t) => t !== tagToRemove)
-  lastUsedTags.value = updated
-  LocalStorageService.saveLastUseTags(updated)
-}
 </script>
